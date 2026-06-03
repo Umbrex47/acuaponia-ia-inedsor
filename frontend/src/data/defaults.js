@@ -45,6 +45,17 @@ export function sensorPercent(key, value) {
 // Orden en el que se muestran los sensores cuando están activos.
 export const SENSOR_ORDER = Object.keys(SENSOR_META);
 
+// Sensores esenciales que se muestran de entrada en el dashboard.
+// El resto queda detrás del botón "Ver más".
+export const ESSENTIAL_SENSORS = [
+  'ph',
+  'electroconductividad',
+  'nivelAgua',
+  'turbiedad',
+  'oxigeno',
+  'temperatura',
+];
+
 export const DEFAULT_STATE = {
   // Vacío a propósito: solo se agregan los sensores que el sistema reporta.
   sensors: {},

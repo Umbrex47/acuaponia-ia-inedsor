@@ -1,16 +1,31 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import CircleGauge from '../components/CircleGauge';
 import DualCameraView from '../components/DualCameraView';
 import { Icon } from '../components/Icon';
 import { useAquaponic } from '../context/useAquaponic';
 import { formatSensorReading } from '../data/normalizer';
-import { SENSOR_META, SENSOR_ORDER, getSensorRisk } from '../data/defaults';
+import {
+  SENSOR_META,
+  SENSOR_ORDER,
+  ESSENTIAL_SENSORS,
+  getSensorRisk,
+} from '../data/defaults';
 
 export default function Dashboard({ navigate }) {
   const containerRef = useRef(null);
   const { state, systemMeta, isLive } = useAquaponic();
   const { sensors, fish, plants, system } = state;
+  const [showAll, setShowAll] = useState(false);
+
+  // Sensores esenciales primero; el resto se revela con "Ver más".
+  const essentialKeys = SENSOR_ORDER.filter((key) =>
+    ESSENTIAL_SENSORS.includes(key)
+  );
+  const extraKeys = SENSOR_ORDER.filter(
+    (key) => !ESSENTIAL_SENSORS.includes(key)
+  );
+  const visibleKeys = showAll ? [...essentialKeys, ...extraKeys] : essentialKeys;
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -72,7 +87,7 @@ export default function Dashboard({ navigate }) {
       </div>
 
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8 justify-items-center">
-        {SENSOR_ORDER.map((key, i) => {
+        {visibleKeys.map((key, i) => {
           const reading = sensors[key];
           return (
             <CircleGauge
@@ -88,6 +103,23 @@ export default function Dashboard({ navigate }) {
           );
         })}
       </div>
+
+      {extraKeys.length > 0 && (
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            className="btn-outline text-sm"
+            aria-expanded={showAll}
+          >
+            {showAll ? 'Ver menos' : `Ver más (${extraKeys.length})`}
+            <Icon.Chevron
+              className={
+                'w-4 h-4 transition-transform ' + (showAll ? 'rotate-180' : '')
+              }
+            />
+          </button>
+        </div>
+      )}
 
       <div data-anim="cam" className="mt-10 max-w-5xl mx-auto">
         <DualCameraView fish={fish} plants={plants} />
