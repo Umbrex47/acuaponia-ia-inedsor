@@ -187,6 +187,7 @@ export function formatSensorReading(sensor) {
   const { value, unit } = sensor;
   if (unit === '°C') return `${value.toFixed(1)}°C`;
   if (unit === 'L') return `${Math.round(value)}L`;
+  if (unit === 'cm') return `${value.toFixed(1)} cm`;
   if (unit === 'mg/L') return `${value} mg/L`;
   if (unit === 'ppm') return `${value} ppm`;
   if (unit === 'mS/cm') return `${value.toFixed(2)} mS/cm`;

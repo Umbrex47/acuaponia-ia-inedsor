@@ -73,6 +73,34 @@ Sensor **I2C** para el **aire** (no sumergible). Publica tres parámetros:
 - Librerías Arduino: **Adafruit BME280 Library** + **Adafruit Unified Sensor**.
 - Diferencia con el DS18B20: el BME mide **aire**; el DS18B20 mide **agua**.
 
+## Nivel de agua (ultrasónico JSN-SR04T / HC-SR04)
+
+Mide la **altura de la columna de agua** (clave `nivelAgua`, en **cm**).
+
+**Cableado:**
+
+| Pin sensor | ESP32 |
+|---|---|
+| VCC | 5 V |
+| GND | GND |
+| Trig | GPIO 5 |
+| Echo | GPIO 18 |
+
+> ⚠️ El pin **Echo** entrega 5 V. Si tu módulo no es de 3.3 V, usa un divisor
+> de voltaje (p. ej. 1 kΩ + 2 kΩ) hacia GPIO 18 para no dañar la ESP32.
+
+**Geometría (en `config.h`):** el sensor mira hacia abajo, montado por encima
+del borde de la pecera:
+
+```c
+#define TANK_DEPTH_CM     32.0f   // profundidad de la pecera
+#define SENSOR_OFFSET_CM  7.0f    // altura del sensor sobre el borde
+```
+
+El firmware calcula: `nivel = (7 + 32) − distancia_medida`, lo limita a
+`0…32 cm` y publica también el % de llenado. Si cambias la pecera o reubicas el
+sensor, ajusta solo esas dos constantes.
+
 > **Nota Arduino IDE:** solo se compilan los archivos de la raíz del sketch y
 > los de la carpeta `src/` (recursivamente). Por eso todo va bajo `src/`.
 

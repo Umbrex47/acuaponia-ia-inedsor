@@ -16,6 +16,16 @@
 #define PIN_EC     32        // AO del medidor de electroconductividad (ADC1)
 #define PIN_TURB   33        // AO del sensor de turbidez (ADC1) — reservado
 
+// Sensor ultrasónico de nivel de agua (JSN-SR04T / HC-SR04)
+#define PIN_LEVEL_TRIG  5    // Trigger (salida)
+#define PIN_LEVEL_ECHO  18   // Echo (entrada)
+
+// ── Geometría de la pecera para el nivel de agua (en cm) ──
+// El sensor mira hacia abajo, montado por encima del borde de la pecera.
+#define TANK_DEPTH_CM       32.0f   // profundidad útil de la pecera
+#define SENSOR_OFFSET_CM    7.0f    // altura del sensor sobre el borde superior
+// Distancia sensor→fondo = SENSOR_OFFSET_CM + TANK_DEPTH_CM (pecera vacía).
+
 // Bus I2C compartido (BME280 y otros sensores digitales)
 #define PIN_I2C_SDA  21
 #define PIN_I2C_SCL  22

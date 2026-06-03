@@ -80,8 +80,8 @@ export const SENSORS_INFO = {
     currentTyp: '30 mA durante medición · 5 mA idle',
     powerW: 0.15,
     description:
-      'Sensor ultrasónico waterproof que mide la distancia desde la tapa hasta la superficie del agua. Calcula litros mediante volumen del tanque.',
-    location: 'Tapa de pecera',
+      'Sensor ultrasónico waterproof montado 7 cm por encima del borde de la pecera (32 cm de profundidad). Mide la distancia hasta la superficie y la convierte en la altura de la columna de agua (cm).',
+    location: 'Sobre la pecera · 7 cm del borde',
     pin: 'GPIO 5 (Trig) · GPIO 18 (Echo)',
     icon: 'Drop',
   },

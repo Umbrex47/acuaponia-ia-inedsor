@@ -7,7 +7,7 @@ export const SENSOR_META = {
   temperatura: { label: 'Temperatura', unit: '°C', color: '#0A0A0A', min: 15, max: 35, optimal: { min: 20, max: 28 } },
   ph: { label: 'pH', unit: '', color: '#0A0A0A', min: 0, max: 14, optimal: { min: 6.5, max: 8 } },
   oxigeno: { label: 'Oxígeno D', unit: 'mg/L', color: '#2563EB', min: 0, max: 15, optimal: { min: 5, max: 12 } },
-  nivelAgua: { label: 'Nvl de agua', unit: 'L', color: '#0A0A0A', min: 0, max: 200, optimal: { min: 80, max: 180 } },
+  nivelAgua: { label: 'Nvl de agua', unit: 'cm', color: '#0A0A0A', min: 0, max: 32, optimal: { min: 24, max: 32 } },
   nitratos: { label: 'Nitratos', unit: 'ppm', color: '#0A0A0A', min: 0, max: 50, optimal: { min: 5, max: 40 } },
   co2: { label: 'CO₂', unit: 'ppm', color: '#0A0A0A', min: 0, max: 1000, optimal: { min: 50, max: 600 } },
   electroconductividad: { label: 'Electrocond.', unit: 'mS/cm', color: '#16A34A', min: 0, max: 3, optimal: { min: 0.8, max: 2 } },

@@ -4,6 +4,7 @@
 #include "temperature_ds18b20.h"   // sonda sumergible DFRobot (1-Wire)
 #include "ec_sensor.h"             // electroconductividad DFRobot (analógico)
 #include "bme280_sensor.h"         // ambiente: T, HR, presión (I2C)
+#include "water_level_ultrasonic.h" // nivel de agua (ultrasónico Trig/Echo)
 // #include "temperature_ntc.h"    // alternativa: termistor NTC analógico
 // #include "ph_sensor.h"
 // #include "oxygen_sensor.h"
@@ -15,6 +16,7 @@
 static SensorDef SENSORS[] = {
   { "temperatura", "°C", ds18b20_begin, ds18b20_read },
   { "electroconductividad", "mS/cm", ec_begin, ec_read },
+  { "nivelAgua", "cm", water_level_begin, water_level_read },
   { "temperaturaAmbiente", "°C", bme280_begin, bme280_temp_ambiente_read },
   { "humedad", "%", nullptr, bme280_humedad_read },
   { "presion", "hPa", nullptr, bme280_presion_read },

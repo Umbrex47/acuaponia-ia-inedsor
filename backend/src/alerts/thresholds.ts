@@ -33,8 +33,8 @@ export const SENSOR_THRESHOLDS: Record<string, SensorThreshold> = {
   },
   nivelAgua: {
     label: 'Nivel de agua',
-    unit: 'L',
-    optimal: { min: 80, max: 180 },
+    unit: 'cm',
+    optimal: { min: 24, max: 32 },
     aliases: ['nivelAgua', 'nivel', 'waterLevel', 'nivel_agua'],
   },
   nitratos: {
