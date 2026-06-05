@@ -60,6 +60,12 @@ export default function Parameters() {
     return () => ctx.revert();
   }, []);
 
+  // Sensores que están recibiendo datos primero; los inactivos al final.
+  const orderedKeys = [
+    ...SENSOR_ORDER.filter((key) => sensors[key]),
+    ...SENSOR_ORDER.filter((key) => !sensors[key]),
+  ];
+
   const handleChange = (k) => (e) =>
     setForm((s) => ({ ...s, [k]: e.target.value }));
 
@@ -172,7 +178,7 @@ export default function Parameters() {
           Lecturas en tiempo real
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 justify-items-center">
-          {SENSOR_ORDER.map((key, i) => {
+          {orderedKeys.map((key, i) => {
             const reading = sensors[key];
             return (
               <div data-anim="param-gauge" key={key}>

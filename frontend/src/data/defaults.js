@@ -54,6 +54,9 @@ export const ESSENTIAL_SENSORS = [
   'turbiedad',
   'oxigeno',
   'temperatura',
+  'temperaturaAmbiente',
+  'humedad',
+  'presion',
 ];
 
 export const DEFAULT_STATE = {

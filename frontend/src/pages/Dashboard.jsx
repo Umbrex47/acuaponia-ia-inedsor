@@ -18,12 +18,18 @@ export default function Dashboard({ navigate }) {
   const { sensors, fish, plants, system } = state;
   const [showAll, setShowAll] = useState(false);
 
+  const sortActiveFirst = (keys) => [
+    ...keys.filter((key) => sensors[key]),
+    ...keys.filter((key) => !sensors[key]),
+  ];
+
   // Sensores esenciales primero; el resto se revela con "Ver más".
-  const essentialKeys = SENSOR_ORDER.filter((key) =>
-    ESSENTIAL_SENSORS.includes(key)
+  // Dentro de cada grupo, los que reciben datos van al inicio.
+  const essentialKeys = sortActiveFirst(
+    SENSOR_ORDER.filter((key) => ESSENTIAL_SENSORS.includes(key))
   );
-  const extraKeys = SENSOR_ORDER.filter(
-    (key) => !ESSENTIAL_SENSORS.includes(key)
+  const extraKeys = sortActiveFirst(
+    SENSOR_ORDER.filter((key) => !ESSENTIAL_SENSORS.includes(key))
   );
   const visibleKeys = showAll ? [...essentialKeys, ...extraKeys] : essentialKeys;
 
