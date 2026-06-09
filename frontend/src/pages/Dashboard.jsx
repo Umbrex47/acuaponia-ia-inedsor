@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import CircleGauge from '../components/CircleGauge';
+import PhScaleBar from '../components/PhScaleBar';
 import DualCameraView from '../components/DualCameraView';
 import { Icon } from '../components/Icon';
 import { useAquaponic } from '../context/useAquaponic';
@@ -89,6 +90,20 @@ export default function Dashboard({ navigate }) {
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8 justify-items-center">
         {visibleKeys.map((key, i) => {
           const reading = sensors[key];
+          if (key === 'ph') {
+            return (
+              <PhScaleBar
+                key={key}
+                label={SENSOR_META[key].label}
+                value={reading?.value ?? 0}
+                min={SENSOR_META[key].min}
+                max={SENSOR_META[key].max}
+                delay={0.3 + i * 0.08}
+                status={reading ? getSensorRisk(key, reading.value) : null}
+                inactive={!reading}
+              />
+            );
+          }
           return (
             <CircleGauge
               key={key}
