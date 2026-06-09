@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Subscription } from 'rxjs';
 import { MqttService } from '../mqtt/mqtt.service';
 import { MailService } from './mail.service';
+import { TelegramService } from './telegram.service';
 import {
   evaluateRisk,
   extractReadings,
@@ -28,6 +29,7 @@ export class AlertService implements OnModuleInit {
   constructor(
     private readonly mqtt: MqttService,
     private readonly mail: MailService,
+    private readonly telegram: TelegramService,
     private readonly config: ConfigService,
   ) {}
 
@@ -177,6 +179,21 @@ export class AlertService implements OnModuleInit {
       </div>
     `;
 
-    await this.mail.send({ subject, text, html });
+    const emoji = level === 'high' ? '🔴' : '🔵';
+    const telegramText = [
+      `${emoji} <b>Alerta acuapónica</b>`,
+      ``,
+      `<b>Parámetro:</b> ${meta.label}`,
+      `<b>Lectura:</b> ${value}${unit}`,
+      `<b>Estado:</b> ${riskLabel} (${direction} del rango óptimo)`,
+      `<b>Rango óptimo:</b> ${meta.optimal.min} – ${meta.optimal.max}${unit}`,
+      `<b>Origen:</b> ${origin}`,
+      `<b>Fecha:</b> ${timestamp}`,
+    ].join('\n');
+
+    await Promise.all([
+      this.mail.send({ subject, text, html }),
+      this.telegram.send({ text: telegramText }),
+    ]);
   }
 }

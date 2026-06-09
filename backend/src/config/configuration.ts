@@ -24,6 +24,15 @@ export default () => ({
       .map((address) => address.trim())
       .filter(Boolean),
   },
+  telegram: {
+    // Si TELEGRAM_BOT_TOKEN está vacío, las alertas por Telegram se deshabilitan.
+    botToken: process.env.TELEGRAM_BOT_TOKEN || '',
+    // IDs de chat destino separados por comas (usuarios, grupos o canales).
+    chatIds: (process.env.TELEGRAM_CHAT_IDS || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean),
+  },
   alerts: {
     enabled: process.env.ALERTS_ENABLED !== 'false',
     // Tiempo mínimo (ms) entre correos para un mismo sensor, evita spam.
