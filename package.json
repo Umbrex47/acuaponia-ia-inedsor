@@ -1,0 +1,18 @@
+{
+  "name": "acuaponia",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Orquestador de servicios del sistema acuapónico (frontend + backend + cámara)",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:all": "concurrently -n backend,frontend,camera -c blue,green,magenta \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:camera\"",
+    "dev:backend": "npm --prefix backend run start:dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:camera": "python camera-publisher/camera_publisher.py",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

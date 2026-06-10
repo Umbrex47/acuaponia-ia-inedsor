@@ -40,6 +40,10 @@ export class ReadingsModule {
 
     return {
       module: ReadingsModule,
+      // Global para que otros módulos (p. ej. decision) puedan inyectar
+      // ReadingsService sin re-importar el módulo dinámico ni duplicar la
+      // suscripción a MQTT.
+      global: true,
       imports,
       controllers: [ReadingsController],
       providers: [ReadingsService],

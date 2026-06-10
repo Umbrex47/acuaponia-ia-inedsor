@@ -20,6 +20,23 @@ import {
   SensorReadingDocument,
 } from './schemas/sensor-reading.schema';
 
+/** Estadísticas agregadas de un sensor en una ventana de tiempo. */
+export interface SensorStat {
+  sensorKey: string;
+  label: string;
+  unit: string;
+  count: number;
+  min: number;
+  max: number;
+  avg: number;
+  /** Lecturas por debajo del rango óptimo. */
+  low: number;
+  /** Lecturas por encima del rango óptimo. */
+  high: number;
+  lastValue: number;
+  lastAt: Date;
+}
+
 @Injectable()
 export class ReadingsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ReadingsService.name);
@@ -129,6 +146,37 @@ export class ReadingsService implements OnModuleInit, OnModuleDestroy {
       .sort({ recordedAt: -1 })
       .limit(Math.min(Math.max(limit, 1), 1000))
       .lean<SensorReading[]>()
+      .exec();
+  }
+
+  /**
+   * Estadísticas agregadas por sensor desde una fecha dada.
+   * Base para el reporte de progreso y para futuros análisis/predicción.
+   */
+  async statsSince(since: Date): Promise<SensorStat[]> {
+    if (!this.model) return [];
+    return this.model
+      .aggregate<SensorStat>([
+        { $match: { recordedAt: { $gte: since } } },
+        { $sort: { recordedAt: 1 } },
+        {
+          $group: {
+            _id: '$sensorKey',
+            label: { $first: '$label' },
+            unit: { $first: '$unit' },
+            count: { $sum: 1 },
+            min: { $min: '$value' },
+            max: { $max: '$value' },
+            avg: { $avg: '$value' },
+            low: { $sum: { $cond: [{ $eq: ['$riskLevel', 'low'] }, 1, 0] } },
+            high: { $sum: { $cond: [{ $eq: ['$riskLevel', 'high'] }, 1, 0] } },
+            lastValue: { $last: '$value' },
+            lastAt: { $last: '$recordedAt' },
+          },
+        },
+        { $project: { _id: 0, sensorKey: '$_id', label: 1, unit: 1, count: 1, min: 1, max: 1, avg: 1, low: 1, high: 1, lastValue: 1, lastAt: 1 } },
+        { $sort: { sensorKey: 1 } },
+      ])
       .exec();
   }
 

@@ -38,6 +38,29 @@ export default () => ({
     // Tiempo mínimo (ms) entre correos para un mismo sensor, evita spam.
     cooldownMs: parseInt(process.env.ALERTS_COOLDOWN_MS ?? '300000', 10),
   },
+  decision: {
+    // Motor de decisiones (reglas + reportes). Apágalo con DECISION_ENABLED=false.
+    enabled: process.env.DECISION_ENABLED !== 'false',
+    pump: {
+      // Identificador del actuador; se publica en <prefix>/commands/<id>.
+      actuatorId: process.env.PUMP_ACTUATOR_ID || 'bomba_agua',
+      // Histéresis por nivel de agua (cm). Por debajo de offLevel se apaga la
+      // bomba (protección anti-marcha en seco); al alcanzar onLevel se enciende.
+      onLevel: parseFloat(process.env.PUMP_ON_LEVEL ?? '24'),
+      offLevel: parseFloat(process.env.PUMP_OFF_LEVEL ?? '20'),
+      // Tiempo mínimo (ms) que se mantiene un estado antes de poder cambiarlo,
+      // evita el ciclado rápido (encendido/apagado en bucle).
+      minStateMs: parseInt(process.env.PUMP_MIN_STATE_MS ?? '60000', 10),
+    },
+    report: {
+      // Reporte de progreso por correo + Telegram.
+      enabled: process.env.REPORT_ENABLED !== 'false',
+      // Expresión cron (zona del servidor). Por defecto: 08:00 cada día.
+      cron: process.env.REPORT_CRON || '0 8 * * *',
+      // Ventana de análisis en horas para el reporte.
+      windowHours: parseInt(process.env.REPORT_WINDOW_HOURS ?? '24', 10),
+    },
+  },
   mongodb: {
     // Si MONGODB_URI está vacío, el registro en base de datos se deshabilita.
     uri: process.env.MONGODB_URI || '',

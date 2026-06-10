@@ -13,7 +13,34 @@ Monorepo del sistema acuapónico: **dashboard React** y **backend NestJS** con M
 └── README.md          # Este archivo
 ```
 
-## Inicio rápido
+## Inicio rápido (todo a la vez)
+
+Desde la raíz del repo, un solo comando levanta backend + frontend (crea los
+`.env` faltantes desde `.env.example` e instala dependencias si hace falta):
+
+```bash
+# Windows (CMD/PowerShell)
+start.bat
+start.bat --camera   # incluye el publicador de cámara (Python)
+
+# Git Bash / macOS / Linux
+./start.sh
+./start.sh --camera
+```
+
+O directamente con npm:
+
+```bash
+npm install        # solo la primera vez (instala 'concurrently')
+npm run dev         # backend + frontend
+npm run dev:all     # backend + frontend + cámara
+npm run install:all # instala dependencias de raíz, backend y frontend
+```
+
+- Backend: `http://localhost:8080` · Frontend: `http://localhost:5173`
+- El broker MQTT y MongoDB son infraestructura externa (ver pasos abajo).
+
+## Inicio manual
 
 ### 1. Broker MQTT
 

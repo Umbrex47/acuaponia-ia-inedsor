@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import CircleGauge from '../components/CircleGauge';
 import PhScaleBar from '../components/PhScaleBar';
+import WaterTankGauge from '../components/WaterTankGauge';
+import ThermometerGauge from '../components/ThermometerGauge';
 import { useAquaponic } from '../context/useAquaponic';
 import { formatSensorReading } from '../data/normalizer';
 import { SENSOR_META, SENSOR_ORDER, sensorPercent, getSensorRisk } from '../data/defaults';
@@ -181,6 +183,26 @@ export default function Parameters() {
                   <PhScaleBar
                     label={SENSOR_META[key].label}
                     value={reading?.value ?? 0}
+                    min={SENSOR_META[key].min}
+                    max={SENSOR_META[key].max}
+                    delay={0.1 + i * 0.05}
+                    status={reading ? getSensorRisk(key, reading.value) : null}
+                    inactive={!reading}
+                  />
+                ) : key === 'nivelAgua' ? (
+                  <WaterTankGauge
+                    label={SENSOR_META[key].label}
+                    value={reading?.percent ?? 0}
+                    reading={reading ? formatSensorReading(reading) : null}
+                    delay={0.1 + i * 0.05}
+                    status={reading ? getSensorRisk(key, reading.value) : null}
+                    inactive={!reading}
+                  />
+                ) : key === 'temperatura' ? (
+                  <ThermometerGauge
+                    label={SENSOR_META[key].label}
+                    value={reading?.percent ?? 0}
+                    reading={reading ? formatSensorReading(reading) : null}
                     min={SENSOR_META[key].min}
                     max={SENSOR_META[key].max}
                     delay={0.1 + i * 0.05}

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import CircleGauge from '../components/CircleGauge';
 import PhScaleBar from '../components/PhScaleBar';
+import WaterTankGauge from '../components/WaterTankGauge';
+import ThermometerGauge from '../components/ThermometerGauge';
 import DualCameraView from '../components/DualCameraView';
 import { Icon } from '../components/Icon';
 import { useAquaponic } from '../context/useAquaponic';
@@ -96,6 +98,34 @@ export default function Dashboard({ navigate }) {
                 key={key}
                 label={SENSOR_META[key].label}
                 value={reading?.value ?? 0}
+                min={SENSOR_META[key].min}
+                max={SENSOR_META[key].max}
+                delay={0.3 + i * 0.08}
+                status={reading ? getSensorRisk(key, reading.value) : null}
+                inactive={!reading}
+              />
+            );
+          }
+          if (key === 'nivelAgua') {
+            return (
+              <WaterTankGauge
+                key={key}
+                label={SENSOR_META[key].label}
+                value={reading?.percent ?? 0}
+                reading={reading ? formatSensorReading(reading) : null}
+                delay={0.3 + i * 0.08}
+                status={reading ? getSensorRisk(key, reading.value) : null}
+                inactive={!reading}
+              />
+            );
+          }
+          if (key === 'temperatura') {
+            return (
+              <ThermometerGauge
+                key={key}
+                label={SENSOR_META[key].label}
+                value={reading?.percent ?? 0}
+                reading={reading ? formatSensorReading(reading) : null}
                 min={SENSOR_META[key].min}
                 max={SENSOR_META[key].max}
                 delay={0.3 + i * 0.08}
