@@ -1,0 +1,125 @@
+# Stack de producción para Aquaponic OS (compatible con Coolify / Docker Compose).
+#
+# Servicios:
+#   mongo      → base de datos del histórico de lecturas
+#   mosquitto  → broker MQTT (TCP 1883 para ESP32 · WS 9001 opcional)
+#   backend    → API NestJS + WebSocket (/ws) + motor de decisiones
+#   frontend   → dashboard React servido por Nginx (config inyectada en runtime)
+#
+# En Coolify: asigna un dominio al servicio `frontend` (puerto 80) y otro al
+# `backend` (puerto 8080), y define las variables APP_* / secretos en la UI.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [aquaponia]
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    ports:
+      - "${MQTT_TCP_PORT:-1883}:1883"   # MQTT TCP (ESP32 / simulador)
+      - "${MQTT_WS_PORT:-9001}:9001"    # MQTT sobre WebSocket (opcional)
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -t healthcheck -m ping || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks: [aquaponia]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      MQTT_URL: mqtt://mosquitto:1883
+      MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:-aquaponic-backend}
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      MQTT_RECONNECT_MS: ${MQTT_RECONNECT_MS:-3000}
+      MQTT_TOPIC_PREFIX: ${MQTT_TOPIC_PREFIX:-aquaponic}
+      MQTT_DEMO_ENABLED: ${MQTT_DEMO_ENABLED:-false}
+      MQTT_DEMO_INTERVAL_MS: ${MQTT_DEMO_INTERVAL_MS:-5000}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-aquaponic}
+      READINGS_PERSIST_ENABLED: ${READINGS_PERSIST_ENABLED:-true}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_SECURE: ${MAIL_SECURE:-false}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: "${MAIL_FROM:-Aquaponic OS <no-reply@aquaponic.local>}"
+      MAIL_TO: ${MAIL_TO:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_IDS: ${TELEGRAM_CHAT_IDS:-}
+      ALERTS_ENABLED: ${ALERTS_ENABLED:-true}
+      ALERTS_COOLDOWN_MS: ${ALERTS_COOLDOWN_MS:-300000}
+      DECISION_ENABLED: ${DECISION_ENABLED:-true}
+      PUMP_ACTUATOR_ID: ${PUMP_ACTUATOR_ID:-bomba_agua}
+      PUMP_ON_LEVEL: ${PUMP_ON_LEVEL:-24}
+      PUMP_OFF_LEVEL: ${PUMP_OFF_LEVEL:-20}
+      PUMP_MIN_STATE_MS: ${PUMP_MIN_STATE_MS:-60000}
+      REPORT_ENABLED: ${REPORT_ENABLED:-true}
+      REPORT_CRON: "${REPORT_CRON:-0 8 * * *}"
+      REPORT_WINDOW_HOURS: ${REPORT_WINDOW_HOURS:-24}
+    expose:
+      - "8080"
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks: [aquaponia]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # URLs públicas del backend (ajústalas a tus dominios en Coolify).
+      APP_API_URL: ${APP_API_URL:-http://localhost:8080}
+      APP_WS_URL: ${APP_WS_URL:-ws://localhost:8080/ws}
+      APP_WS_ENABLED: ${APP_WS_ENABLED:-true}
+      # MQTT directo desde el navegador: desactivado por defecto (usa el WS del
+      # backend). Si lo activas, expón Mosquitto con WSS.
+      APP_MQTT_URL: ${APP_MQTT_URL:-}
+      APP_MQTT_ENABLED: ${APP_MQTT_ENABLED:-false}
+      APP_MQTT_USERNAME: ${APP_MQTT_USERNAME:-}
+      APP_MQTT_PASSWORD: ${APP_MQTT_PASSWORD:-}
+      APP_CAMERA_FISH_URL: ${APP_CAMERA_FISH_URL:-}
+      APP_CAMERA_PLANTS_URL: ${APP_CAMERA_PLANTS_URL:-}
+    expose:
+      - "80"
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    networks: [aquaponia]
+
+volumes:
+  mongo_data:
+  mosquitto_data:
+  mosquitto_log:
+
+networks:
+  aquaponia:
+    driver: bridge

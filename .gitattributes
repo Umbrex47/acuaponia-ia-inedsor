@@ -1,0 +1,6 @@
+# Fuerza saltos de línea LF en scripts de shell para que funcionen dentro de
+# contenedores Linux aunque se editen en Windows (evita errores por CRLF).
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+start.sh text eol=lf
+mosquitto.conf text eol=lf
