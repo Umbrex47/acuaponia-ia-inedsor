@@ -1,0 +1,13 @@
+# Override SOLO para desarrollo local: `docker compose up` lo carga
+# automáticamente y publica los puertos en el host. Coolify lo ignora
+# (usa únicamente docker-compose.yml), así Traefik enruta por dominio
+# sin conflictos de puertos en el VPS.
+
+services:
+  backend:
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"

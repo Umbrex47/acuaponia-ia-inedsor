@@ -85,10 +85,10 @@ services:
       REPORT_ENABLED: ${REPORT_ENABLED:-true}
       REPORT_CRON: "${REPORT_CRON:-0 8 * * *}"
       REPORT_WINDOW_HOURS: ${REPORT_WINDOW_HOURS:-24}
+    # Sin `ports`: en Coolify, Traefik enruta por dominio hacia el puerto
+    # expuesto. Para acceso directo en local, ver docker-compose.override.yml.
     expose:
       - "8080"
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
     networks: [aquaponia]
 
   frontend:
@@ -115,8 +115,6 @@ services:
       APP_DEMO_MODE: ${APP_DEMO_MODE:-true}
     expose:
       - "80"
-    ports:
-      - "${FRONTEND_PORT:-3000}:80"
     networks: [aquaponia]
 
 volumes:
