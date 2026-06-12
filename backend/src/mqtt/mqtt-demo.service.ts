@@ -5,6 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Subscription } from 'rxjs';
 import { buildPublishTopic, MQTT_TOPIC_SEGMENTS } from './topics.constants';
 import { MqttService } from './mqtt.service';
 
@@ -52,6 +53,7 @@ const round = (v: number, d: number): number => {
 export class MqttDemoService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MqttDemoService.name);
   private timer: ReturnType<typeof setInterval> | null = null;
+  private mqttStatusSub: Subscription | null = null;
   private readonly state = new Map<string, number>();
 
   constructor(
@@ -60,7 +62,7 @@ export class MqttDemoService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    const enabled = this.config.get<boolean>('mqtt.demoEnabled', false);
+    const enabled = this.config.get<boolean>('mqtt.demoEnabled', true);
     if (!enabled) return;
 
     const intervalMs = this.config.get<number>('mqtt.demoIntervalMs', 5000);
@@ -79,12 +81,34 @@ export class MqttDemoService implements OnModuleInit, OnModuleDestroy {
       'telemetry',
     );
 
-    this.timer = setInterval(() => {
-      this.mqtt.publish(sensorsTopic, this.buildPayload());
-    }, intervalMs);
+    const publish = () => {
+      const ok = this.mqtt.publish(sensorsTopic, this.buildPayload());
+      if (!ok) {
+        this.logger.debug('Demo: MQTT aún no conectado, se reintentará');
+      }
+    };
+
+    const startPublishing = () => {
+      publish();
+      if (!this.timer) {
+        this.timer = setInterval(publish, intervalMs);
+      }
+    };
+
+    // Espera a que el broker esté listo y publica al instante (no solo cada N s).
+    this.mqttStatusSub = this.mqtt.status$.subscribe(({ connected }) => {
+      if (!connected) return;
+      startPublishing();
+    });
+
+    // Si MQTT ya conectó antes de suscribirnos, status$ no re-emite el evento.
+    if (this.mqtt.getConnectionStatus().connected) {
+      startPublishing();
+    }
   }
 
   onModuleDestroy(): void {
+    this.mqttStatusSub?.unsubscribe();
     if (this.timer) clearInterval(this.timer);
   }
 

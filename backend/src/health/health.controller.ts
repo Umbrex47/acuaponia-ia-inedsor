@@ -1,9 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MqttService } from '../mqtt/mqtt.service';
 
 @Controller()
 export class HealthController {
-  constructor(private readonly mqtt: MqttService) {}
+  constructor(
+    private readonly mqtt: MqttService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Get()
   root() {
@@ -20,6 +24,9 @@ export class HealthController {
     return {
       status: 'ok',
       mqtt: this.mqtt.getConnectionStatus(),
+      demo: {
+        enabled: this.config.get<boolean>('mqtt.demoEnabled', true),
+      },
     };
   }
 }

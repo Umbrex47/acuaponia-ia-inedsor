@@ -7,7 +7,8 @@ export default () => ({
     password: process.env.MQTT_PASSWORD || undefined,
     reconnectMs: parseInt(process.env.MQTT_RECONNECT_MS ?? '3000', 10),
     topicPrefix: process.env.MQTT_TOPIC_PREFIX ?? 'aquaponic',
-    demoEnabled: process.env.MQTT_DEMO_ENABLED === 'true',
+    // Activo por defecto salvo MQTT_DEMO_ENABLED=false explícito.
+    demoEnabled: process.env.MQTT_DEMO_ENABLED !== 'false',
     demoIntervalMs: parseInt(process.env.MQTT_DEMO_INTERVAL_MS ?? '5000', 10),
   },
   mail: {
