@@ -26,6 +26,8 @@ function flag(runtimeKey, envKey, fallback) {
 }
 
 export const apiConfig = {
+  // Muestra el aviso de demostración al cargar la página.
+  demoMode: flag('demoMode', 'VITE_DEMO_MODE', false),
   api: {
     // Base HTTP del backend NestJS (para alertas manuales, historial, etc.)
     baseUrl: pick('apiUrl', 'VITE_API_URL', 'http://localhost:8080'),

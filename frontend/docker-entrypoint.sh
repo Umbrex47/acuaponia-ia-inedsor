@@ -17,7 +17,8 @@ window.__APP_CONFIG__ = {
   mqttUsername: "${APP_MQTT_USERNAME}",
   mqttPassword: "${APP_MQTT_PASSWORD}",
   cameraFishUrl: "${APP_CAMERA_FISH_URL}",
-  cameraPlantsUrl: "${APP_CAMERA_PLANTS_URL}"
+  cameraPlantsUrl: "${APP_CAMERA_PLANTS_URL}",
+  demoMode: "${APP_DEMO_MODE:-true}"
 };
 EOF
 

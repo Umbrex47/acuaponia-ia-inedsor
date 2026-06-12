@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import ConnectionStatus from './components/ConnectionStatus';
+import DemoNoticeModal from './components/DemoNoticeModal';
 import Dashboard from './pages/Dashboard';
 import Parameters from './pages/Parameters';
 import Sensors from './pages/Sensors';
@@ -43,6 +44,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <DemoNoticeModal />
       <header className="px-4 sm:px-8 py-5 flex items-center justify-between gap-4 max-w-6xl mx-auto w-full">
         <nav className="hidden md:flex items-center gap-1 bg-white border border-black/10 rounded-full p-1 shadow-sm">
           {Object.keys(SCREENS).map((key) => (

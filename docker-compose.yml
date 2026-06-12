@@ -24,10 +24,11 @@ services:
     networks: [aquaponia]
 
   mosquitto:
-    image: eclipse-mosquitto:2
+    build:
+      context: ./mosquitto
+      dockerfile: Dockerfile
     restart: unless-stopped
     volumes:
-      - ./mosquitto/config:/mosquitto/config:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
     ports:
@@ -59,7 +60,8 @@ services:
       MQTT_PASSWORD: ${MQTT_PASSWORD:-}
       MQTT_RECONNECT_MS: ${MQTT_RECONNECT_MS:-3000}
       MQTT_TOPIC_PREFIX: ${MQTT_TOPIC_PREFIX:-aquaponic}
-      MQTT_DEMO_ENABLED: ${MQTT_DEMO_ENABLED:-false}
+      # Modo demo activo por defecto: publica telemetría simulada sin ESP32.
+      MQTT_DEMO_ENABLED: ${MQTT_DEMO_ENABLED:-true}
       MQTT_DEMO_INTERVAL_MS: ${MQTT_DEMO_INTERVAL_MS:-5000}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
       MONGODB_DB_NAME: ${MONGODB_DB_NAME:-aquaponic}
@@ -109,6 +111,8 @@ services:
       APP_MQTT_PASSWORD: ${APP_MQTT_PASSWORD:-}
       APP_CAMERA_FISH_URL: ${APP_CAMERA_FISH_URL:-}
       APP_CAMERA_PLANTS_URL: ${APP_CAMERA_PLANTS_URL:-}
+      # Muestra el modal de aviso de demostración al cargar el dashboard.
+      APP_DEMO_MODE: ${APP_DEMO_MODE:-true}
     expose:
       - "80"
     ports:
