@@ -5,9 +5,9 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Subscription } from 'rxjs';
-import { buildPublishTopic, MQTT_TOPIC_SEGMENTS } from './topics.constants';
-import { MqttService } from './mqtt.service';
+import { MqttService } from '../mqtt/mqtt.service';
+import { buildPublishTopic, MQTT_TOPIC_SEGMENTS } from '../mqtt/topics.constants';
+import { AquaponicGateway } from './aquaponic.gateway';
 
 interface DemoSensor {
   min: number;
@@ -17,8 +17,6 @@ interface DemoSensor {
   decimals: number;
 }
 
-// Escalas reales de cada sensor (coinciden con SENSOR_META del frontend y con
-// thresholds.ts). Permiten generar valores coherentes con su rango.
 const DEMO_SENSORS: Record<string, DemoSensor> = {
   temperatura: { min: 15, max: 35, optimal: [20, 28], step: 0.15, decimals: 1 },
   ph: { min: 0, max: 14, optimal: [6.5, 8], step: 0.04, decimals: 2 },
@@ -42,22 +40,18 @@ const round = (v: number, d: number): number => {
 };
 
 /**
- * Publica telemetría de ejemplo cuando MQTT_DEMO_ENABLED=true.
- *
- * Usa un random walk con reversión a la media: cada tick mueve los valores un
- * paso pequeño y los empuja suavemente hacia el centro del rango óptimo, de
- * modo que las curvas se ven realistas y estables (en lugar de saltos
- * aleatorios). Útil para una demo pública sin ESP32.
+ * Genera telemetría simulada y la entrega al dashboard por WebSocket
+ * (siempre) y por MQTT (si el broker está disponible).
  */
 @Injectable()
-export class MqttDemoService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(MqttDemoService.name);
+export class DemoTelemetryService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(DemoTelemetryService.name);
   private timer: ReturnType<typeof setInterval> | null = null;
-  private mqttStatusSub: Subscription | null = null;
   private readonly state = new Map<string, number>();
 
   constructor(
     private readonly mqtt: MqttService,
+    private readonly gateway: AquaponicGateway,
     private readonly config: ConfigService,
   ) {}
 
@@ -68,12 +62,11 @@ export class MqttDemoService implements OnModuleInit, OnModuleDestroy {
     const intervalMs = this.config.get<number>('mqtt.demoIntervalMs', 5000);
     const prefix = this.config.get<string>('mqtt.topicPrefix', 'aquaponic');
 
-    // Estado inicial: centro del rango óptimo de cada sensor.
     for (const [key, def] of Object.entries(DEMO_SENSORS)) {
       this.state.set(key, (def.optimal[0] + def.optimal[1]) / 2);
     }
 
-    this.logger.warn('Modo demo MQTT activo — publicando telemetría simulada');
+    this.logger.warn('Modo demo activo — enviando telemetría simulada al dashboard');
 
     const sensorsTopic = buildPublishTopic(
       prefix,
@@ -82,33 +75,21 @@ export class MqttDemoService implements OnModuleInit, OnModuleDestroy {
     );
 
     const publish = () => {
-      const ok = this.mqtt.publish(sensorsTopic, this.buildPayload());
-      if (!ok) {
-        this.logger.debug('Demo: MQTT aún no conectado, se reintentará');
+      const payload = this.buildPayload();
+      const body = JSON.stringify(payload);
+
+      this.gateway.broadcast(body);
+      const mqttOk = this.mqtt.publish(sensorsTopic, payload);
+      if (!mqttOk) {
+        this.logger.debug('Demo: MQTT no conectado; solo WebSocket');
       }
     };
 
-    const startPublishing = () => {
-      publish();
-      if (!this.timer) {
-        this.timer = setInterval(publish, intervalMs);
-      }
-    };
-
-    // Espera a que el broker esté listo y publica al instante (no solo cada N s).
-    this.mqttStatusSub = this.mqtt.status$.subscribe(({ connected }) => {
-      if (!connected) return;
-      startPublishing();
-    });
-
-    // Si MQTT ya conectó antes de suscribirnos, status$ no re-emite el evento.
-    if (this.mqtt.getConnectionStatus().connected) {
-      startPublishing();
-    }
+    publish();
+    this.timer = setInterval(publish, intervalMs);
   }
 
   onModuleDestroy(): void {
-    this.mqttStatusSub?.unsubscribe();
     if (this.timer) clearInterval(this.timer);
   }
 
@@ -121,8 +102,6 @@ export class MqttDemoService implements OnModuleInit, OnModuleDestroy {
     const wander = (Math.random() * 2 - 1) * def.step;
     const pull = ((center - current) / halfRange) * def.step * 0.5;
 
-    // Mantiene los valores dentro del óptimo (con un pequeño margen) para que
-    // la demo se vea saludable y estable.
     const margin = halfRange * 0.15;
     let value = current + wander + pull;
     value = clamp(value, lo - margin, hi + margin);
