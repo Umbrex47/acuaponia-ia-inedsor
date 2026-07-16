@@ -87,3 +87,14 @@ Configura en `frontend/.env`:
 
 - [frontend/README.md](./frontend/README.md) — UI y pantallas
 - [backend/README.md](./backend/README.md) — API, topics y payloads MQTT
+- [fish-detection/README.md](./fish-detection/README.md) — YOLO peces + reentrenamiento
+- [docs/fish-detection-plan.md](./docs/fish-detection-plan.md) — plan de implementación + upgrade DeepFish
+- [camera-publisher/README.md](./camera-publisher/README.md) — cámara + detección en vivo
+
+## Detección de peces (resumen)
+
+1. Pesos: `fish-detection/models/fish_yolo11s_aquarium.pt` (entrenados en AIPeces / Aquarium).
+2. En `camera-publisher/.env`: `FISH_DETECT_ENABLED=true`.
+3. Telemetría MQTT: `aquaponic/fish/telemetry` (count, `activityState`, assessment).
+4. Correo de evaluación: backend `FishAssessmentService` (umbrales en `.env`).
+5. Reentrenar / DeepFish: ver `fish-detection/README.md`.

@@ -61,6 +61,20 @@ export default () => ({
       // Ventana de análisis en horas para el reporte.
       windowHours: parseInt(process.env.REPORT_WINDOW_HOURS ?? '24', 10),
     },
+    fishAssessment: {
+      // Evaluación conductual de peces → correo (sin actuadores).
+      enabled: process.env.FISH_ASSESSMENT_ENABLED !== 'false',
+      // Probabilidad mínima (%) de una hipótesis para enviar correo.
+      mailThreshold: parseInt(
+        process.env.FISH_ASSESS_MAIL_THRESHOLD ?? '50',
+        10,
+      ),
+      // Anti-spam entre correos de peces.
+      cooldownMs: parseInt(
+        process.env.FISH_ASSESS_MAIL_COOLDOWN_MS ?? '300000',
+        10,
+      ),
+    },
   },
   mongodb: {
     // Si MONGODB_URI está vacío, el registro en base de datos se deshabilita.

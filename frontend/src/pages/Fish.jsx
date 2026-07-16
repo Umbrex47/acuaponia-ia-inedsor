@@ -3,11 +3,21 @@ import gsap from 'gsap';
 import CameraFeed from '../components/CameraFeed';
 import { useAquaponic } from '../context/useAquaponic';
 
+const ACTIVITY_LABELS = {
+  active: 'Activo',
+  normal: 'Normal',
+  low: 'Poco movimiento',
+};
+
 export default function Fish() {
   const ref = useRef(null);
   const { state } = useAquaponic();
   const { fish } = state;
   const [period, setPeriod] = useState('Crecimiento en 30 días');
+
+  const activityState = fish.behavior?.activityState;
+  const hypotheses = fish.assessment?.hypotheses ?? [];
+  const topHypothesis = hypotheses[0];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -48,7 +58,7 @@ export default function Fish() {
           accentClass="text-accent-blue"
         />
         <div className="mt-3 text-sm text-ink/60">
-          Cámara dentro de la pecera · IR nocturno · 1080p
+          Cámara dentro de la pecera · IR nocturno · detección YOLO
         </div>
       </div>
 
@@ -59,6 +69,27 @@ export default function Fish() {
         <h3 className="font-display font-bold text-3xl text-center text-accent-blue mb-5">
           {fish.species}
         </h3>
+
+        <div data-anim="row" className="kv-row mb-2">
+          Peces detectados:{' '}
+          <span className="font-semibold text-accent-blue">
+            {fish.count == null ? '—' : fish.count}
+          </span>
+        </div>
+        <div data-anim="row" className="kv-row mb-2">
+          Estado de actividad:{' '}
+          <span className="font-semibold">
+            {ACTIVITY_LABELS[activityState] ?? fish.mood ?? '—'}
+          </span>
+        </div>
+        {topHypothesis && (
+          <div
+            data-anim="row"
+            className="mb-4 rounded-md border border-ink/15 bg-ink/5 px-3 py-2 text-sm"
+          >
+            {topHypothesis.message}
+          </div>
+        )}
 
         <div data-anim="row" className="mb-3">
           <select

@@ -120,6 +120,15 @@ export function normalizePayload(raw) {
     const cameraUrl = pick(fish, ['cameraUrl', 'streamUrl', 'cam1']);
     if (cameraUrl != null) fishPatch.cameraUrl = cameraUrl;
     if (fish.cameraStatus != null) fishPatch.cameraStatus = fish.cameraStatus;
+    if (fish.count != null) fishPatch.count = fish.count;
+    if (fish.detections != null) fishPatch.detections = fish.detections;
+    if (fish.confidenceAvg != null) fishPatch.confidenceAvg = fish.confidenceAvg;
+    if (fish.behavior != null && typeof fish.behavior === 'object') {
+      fishPatch.behavior = fish.behavior;
+    }
+    if (fish.assessment != null && typeof fish.assessment === 'object') {
+      fishPatch.assessment = fish.assessment;
+    }
     if (Object.keys(fishPatch).length > 0) patch.fish = fishPatch;
   }
 

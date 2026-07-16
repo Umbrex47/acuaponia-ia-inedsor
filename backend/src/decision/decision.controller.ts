@@ -1,4 +1,8 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  FishAssessmentService,
+  FishTelemetry,
+} from './fish-assessment.service';
 import { PumpDecisionService, PumpMode } from './pump-decision.service';
 import { ReportService } from './report.service';
 
@@ -9,6 +13,7 @@ export class DecisionController {
   constructor(
     private readonly pump: PumpDecisionService,
     private readonly report: ReportService,
+    private readonly fishAssessment: FishAssessmentService,
   ) {}
 
   /** Estado actual de la bomba y su configuración. GET /decision/pump */
@@ -39,5 +44,20 @@ export class DecisionController {
     const window =
       body?.windowHours && body.windowHours > 0 ? body.windowHours : undefined;
     return this.report.runNow(window);
+  }
+
+  /** Última telemetría/assessment de peces. GET /decision/fish-assessment */
+  @Get('fish-assessment')
+  getFishAssessment() {
+    return { fish: this.fishAssessment.getLastFish() };
+  }
+
+  /**
+   * Envía ahora el correo de evaluación conductual.
+   * POST /decision/fish-assessment/now  { "fish"?: {...} }
+   */
+  @Post('fish-assessment/now')
+  async runFishAssessment(@Body() body: { fish?: FishTelemetry }) {
+    return this.fishAssessment.runNow(body);
   }
 }

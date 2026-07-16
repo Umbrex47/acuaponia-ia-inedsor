@@ -59,13 +59,20 @@ cp .env.example .env   # luego edita .env
 | `JPEG_QUALITY`     | Calidad JPEG 10–100 (60 equilibra tamaño/calidad)        |
 | `FRAME_WIDTH`/`HEIGHT` | Redimensiona; altura 0 conserva la relación de aspecto |
 | `RETAIN`           | `true` deja el último frame disponible a nuevos clientes |
+| `FISH_DETECT_ENABLED` | Activa YOLO+SORT en la cámara `fish`                  |
+| `FISH_DETECT_MODEL`| Ruta al `.pt` (por defecto `../fish-detection/models/...`) |
+| `FISH_DETECT_*` / `FISH_*` | Confianza, overlay, umbrales de conducta (ver `.env.example`) |
 
 ### Una cámara
 
 ```env
 CAMERA_TARGET=fish
 CAMERA_SOURCE=0
+FISH_DETECT_ENABLED=true
 ```
+
+Con detección activa también publica `aquaponic/fish/telemetry` (conteo,
+`activityState` active|normal|low, assessment con probabilidades).
 
 ### Dos cámaras (pecera + cultivo)
 

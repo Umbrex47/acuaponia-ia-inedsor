@@ -37,3 +37,11 @@ pnpm-debug.log*
 
 # Archivos locales
 *.rar
+
+# Detección de peces (datasets / pesos / runs)
+fish-detection/datasets/
+fish-detection/runs/
+fish-detection/models/*.pt
+fish-detection/models/*.onnx
+*.pt
+*.onnx

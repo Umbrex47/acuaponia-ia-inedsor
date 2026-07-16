@@ -72,6 +72,11 @@ export const DEFAULT_STATE = {
     growth90: '0.6 cm',
     cameraUrl: '',
     cameraStatus: 'ok',
+    count: null,
+    detections: null,
+    confidenceAvg: null,
+    behavior: null,
+    assessment: null,
   },
   plants: {
     status: 'Saludables',
