@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import CircleGauge from '../components/CircleGauge';
-import PhScaleBar from '../components/PhScaleBar';
-import WaterTankGauge from '../components/WaterTankGauge';
-import ThermometerGauge from '../components/ThermometerGauge';
+import SensorGauge from '../components/SensorGauge';
 import { useAquaponic } from '../context/useAquaponic';
-import { formatSensorReading } from '../data/normalizer';
 import { SENSOR_META, SENSOR_ORDER, sensorPercent, getSensorRisk } from '../data/defaults';
 import { apiConfig } from '../config/api';
 
@@ -179,47 +175,14 @@ export default function Parameters() {
             const reading = sensors[key];
             return (
               <div data-anim="param-gauge" key={key}>
-                {key === 'ph' ? (
-                  <PhScaleBar
-                    label={SENSOR_META[key].label}
-                    value={reading?.value ?? 0}
-                    min={SENSOR_META[key].min}
-                    max={SENSOR_META[key].max}
-                    delay={0.1 + i * 0.05}
-                    status={reading ? getSensorRisk(key, reading.value) : null}
-                    inactive={!reading}
-                  />
-                ) : key === 'nivelAgua' ? (
-                  <WaterTankGauge
-                    label={SENSOR_META[key].label}
-                    value={reading?.percent ?? 0}
-                    reading={reading ? formatSensorReading(reading) : null}
-                    delay={0.1 + i * 0.05}
-                    status={reading ? getSensorRisk(key, reading.value) : null}
-                    inactive={!reading}
-                  />
-                ) : key === 'temperatura' ? (
-                  <ThermometerGauge
-                    label={SENSOR_META[key].label}
-                    value={reading?.percent ?? 0}
-                    reading={reading ? formatSensorReading(reading) : null}
-                    min={SENSOR_META[key].min}
-                    max={SENSOR_META[key].max}
-                    delay={0.1 + i * 0.05}
-                    status={reading ? getSensorRisk(key, reading.value) : null}
-                    inactive={!reading}
-                  />
-                ) : (
-                  <CircleGauge
-                    label={SENSOR_META[key].label}
-                    value={reading?.percent ?? 0}
-                    reading={reading ? formatSensorReading(reading) : null}
-                    delay={0.1 + i * 0.05}
-                    color={SENSOR_META[key].color}
-                    status={reading ? getSensorRisk(key, reading.value) : null}
-                    inactive={!reading}
-                  />
-                )}
+                <SensorGauge
+                  sensorKey={key}
+                  reading={reading}
+                  label={SENSOR_META[key].label}
+                  delay={0.1 + i * 0.05}
+                  status={reading ? getSensorRisk(key, reading.value) : null}
+                  inactive={!reading}
+                />
               </div>
             );
           })}
