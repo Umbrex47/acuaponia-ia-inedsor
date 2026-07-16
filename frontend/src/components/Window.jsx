@@ -16,7 +16,7 @@ export default function Window({ children, onBack, onForward, onClose, onRefresh
           </button>
         </div>
         <div className="text-xs uppercase tracking-widest text-white/70 font-medium hidden sm:block">
-          Sistema Acuapónico
+          AquaGia OS
         </div>
         <button className="nav-pill" onClick={onClose} aria-label="Cerrar">
           <Icon.Close />
