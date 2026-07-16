@@ -74,6 +74,17 @@ FISH_DETECT_ENABLED=true
 Con detección activa también publica `aquaponic/fish/telemetry` (conteo,
 `activityState` active|normal|low, assessment con probabilidades).
 
+### Plantas
+
+```env
+CAMERA_TARGET=plants
+CAMERA_SOURCE=1
+PLANT_DETECT_ENABLED=true
+PLANT_DETECT_MODEL=../plant-detection/models/health_classifier.pt
+```
+
+Publica `aquaponic/plants/telemetry` (count, findings, assessment de hongos/color/manchas).
+
 ### Dos cámaras (pecera + cultivo)
 
 ```env

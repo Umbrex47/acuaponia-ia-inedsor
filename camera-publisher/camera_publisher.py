@@ -35,6 +35,9 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_MODEL = (
     ROOT.parent / "fish-detection" / "models" / "fish_yolo11s_aquarium.pt"
 )
+DEFAULT_PLANT_MODEL = (
+    ROOT.parent / "plant-detection" / "models" / "health_classifier.pt"
+)
 
 
 def _env(key: str, default: str = "") -> str:
@@ -89,6 +92,16 @@ class DetectConfig:
 
 
 @dataclass
+class PlantDetectConfig:
+    enabled: bool
+    model_path: Path
+    every_n: int
+    overlay: bool
+    assess_interval_sec: float
+    telemetry_every_sec: float
+
+
+@dataclass
 class AppConfig:
     host: str
     port: int
@@ -103,6 +116,7 @@ class AppConfig:
     height: int
     retain: bool
     detect: DetectConfig
+    plant_detect: PlantDetectConfig
 
     @property
     def topic_prefix(self) -> str:
@@ -150,6 +164,16 @@ def load_config() -> AppConfig:
         telemetry_every_sec=_env_float("FISH_TELEMETRY_EVERY_SEC", 5),
     )
 
+    plant_model = _env("PLANT_DETECT_MODEL", str(DEFAULT_PLANT_MODEL))
+    plant_detect = PlantDetectConfig(
+        enabled=_env_bool("PLANT_DETECT_ENABLED", False),
+        model_path=Path(plant_model),
+        every_n=max(1, _env_int("PLANT_DETECT_EVERY_N", 3)),
+        overlay=_env_bool("PLANT_DETECT_OVERLAY", True),
+        assess_interval_sec=_env_float("PLANT_ASSESS_INTERVAL_SEC", 90),
+        telemetry_every_sec=_env_float("PLANT_TELEMETRY_EVERY_SEC", 5),
+    )
+
     return AppConfig(
         host=_env("MQTT_HOST", "localhost"),
         port=_env_int("MQTT_PORT", 1883),
@@ -164,6 +188,7 @@ def load_config() -> AppConfig:
         height=_env_int("FRAME_HEIGHT", 0),
         retain=_env_bool("RETAIN", False),
         detect=detect,
+        plant_detect=plant_detect,
     )
 
 
@@ -212,15 +237,20 @@ class CameraStreamer(threading.Thread):
         self.stop_event = stop_event
         self.topic = f"{cfg.topic_prefix}/cameras/{cam.target}"
         self.telemetry_topic = f"{cfg.topic_prefix}/fish/telemetry"
+        self.plant_telemetry_topic = f"{cfg.topic_prefix}/plants/telemetry"
         self.encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), cfg.jpeg_quality]
         self._detector = None
         self._analyzer = None
+        self._plant_analyzer = None
         self._frame_i = 0
         self._last_telemetry = 0.0
         self._last_result = None
+        self._last_plant_result = None
 
         if cam.target == "fish" and cfg.detect.enabled:
             self._init_detector()
+        if cam.target == "plants" and cfg.plant_detect.enabled:
+            self._init_plant_analyzer()
 
     def _init_detector(self) -> None:
         dcfg = self.cfg.detect
@@ -257,6 +287,27 @@ class CameraStreamer(threading.Thread):
             print(f"[fish] no se pudo cargar el detector: {err}", flush=True)
             self._detector = None
             self._analyzer = None
+
+    def _init_plant_analyzer(self) -> None:
+        pcfg = self.cfg.plant_detect
+        try:
+            from plant_ai.analyzer import PlantAnalyzer
+
+            model = pcfg.model_path if pcfg.model_path.exists() else None
+            if model is None:
+                print(
+                    f"[plants] modelo no encontrado ({pcfg.model_path}); "
+                    "usando heurísticas de color",
+                    flush=True,
+                )
+            self._plant_analyzer = PlantAnalyzer(
+                model_path=model,
+                assess_interval_sec=pcfg.assess_interval_sec,
+            )
+            print("[plants] análisis de salud activo", flush=True)
+        except Exception as err:
+            print(f"[plants] no se pudo cargar el analizador: {err}", flush=True)
+            self._plant_analyzer = None
 
     def _open_capture(self) -> "cv2.VideoCapture | None":
         source = self.cam.source
@@ -322,6 +373,22 @@ class CameraStreamer(threading.Thread):
             retain=False,
         )
 
+    def _publish_plant_telemetry(self, result) -> None:
+        plants = dict(result.raw)
+        if result.assessment is not None:
+            plants["assessment"] = result.assessment
+        payload = {
+            "plants": plants,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "source": "camera-publisher",
+        }
+        self.client.publish(
+            self.plant_telemetry_topic,
+            json.dumps(payload),
+            qos=0,
+            retain=False,
+        )
+
     def _process_fish(self, frame):
         from fish_ai.overlay import draw_tracks
 
@@ -348,6 +415,31 @@ class CameraStreamer(threading.Thread):
             or (result.assessment is not None)
         ):
             self._publish_telemetry(result)
+            self._last_telemetry = now
+
+        return out
+
+    def _process_plants(self, frame):
+        pcfg = self.cfg.plant_detect
+        self._frame_i += 1
+        run_now = self._frame_i % pcfg.every_n == 0
+
+        if run_now and self._plant_analyzer is not None:
+            result = self._plant_analyzer.process(frame)
+            self._last_plant_result = result
+        else:
+            result = self._last_plant_result
+
+        out = frame
+        if result is not None and pcfg.overlay and result.annotated is not None:
+            out = result.annotated
+
+        now = time.monotonic()
+        if result is not None and (
+            now - self._last_telemetry >= pcfg.telemetry_every_sec
+            or (result.assessment is not None)
+        ):
+            self._publish_plant_telemetry(result)
             self._last_telemetry = now
 
         return out
@@ -392,6 +484,8 @@ class CameraStreamer(threading.Thread):
 
             if self.cam.target == "fish" and self._detector is not None:
                 frame = self._process_fish(frame)
+            elif self.cam.target == "plants" and self._plant_analyzer is not None:
+                frame = self._process_plants(frame)
 
             ok, buffer = cv2.imencode(".jpg", frame, self.encode_params)
             if ok:

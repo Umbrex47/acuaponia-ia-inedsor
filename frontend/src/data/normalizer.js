@@ -147,6 +147,13 @@ export function normalizePayload(raw) {
     const cameraUrl = pick(plants, ['cameraUrl', 'streamUrl', 'cam2']);
     if (cameraUrl != null) plantsPatch.cameraUrl = cameraUrl;
     if (plants.cameraStatus != null) plantsPatch.cameraStatus = plants.cameraStatus;
+    if (plants.count != null) plantsPatch.count = plants.count;
+    if (plants.healthMethod != null) plantsPatch.healthMethod = plants.healthMethod;
+    if (plants.avgHealthScore != null) plantsPatch.avgHealthScore = plants.avgHealthScore;
+    if (Array.isArray(plants.findings)) plantsPatch.findings = plants.findings;
+    if (plants.assessment != null && typeof plants.assessment === 'object') {
+      plantsPatch.assessment = plants.assessment;
+    }
     if (Object.keys(plantsPatch).length > 0) patch.plants = plantsPatch;
   }
 

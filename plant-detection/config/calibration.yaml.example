@@ -1,0 +1,18 @@
+# Calibración para cámara fija — copia como config/calibration.yaml
+#
+# Método 1: referencia conocida en la escena (recomendado)
+# Coloca un objeto de tamaño conocido (ej. tarjeta 8.56 cm de ancho)
+# y mide cuántos píxeles ocupa en la imagen de referencia.
+
+reference:
+  # Ancho en píxeles del objeto de referencia en la imagen
+  width_px: 120
+  # Ancho real en centímetros
+  width_cm: 8.56
+
+# Método 2: distancia fija cámara-sustrato (alternativa)
+# fixed_distance_cm: 80
+# focal_length_px: 950
+
+# Región de interés opcional [x, y, ancho, alto] para ignorar bordes
+roi: null

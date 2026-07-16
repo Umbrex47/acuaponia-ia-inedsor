@@ -85,6 +85,11 @@ export const DEFAULT_STATE = {
     bed: 'Cama 1 · Sustrato hidropónico',
     cameraUrl: '',
     cameraStatus: 'ok',
+    count: null,
+    healthMethod: null,
+    avgHealthScore: null,
+    findings: null,
+    assessment: null,
   },
   // La lista de dispositivos se deriva de los sensores activos.
   devices: [],

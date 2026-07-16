@@ -3,6 +3,10 @@ import {
   FishAssessmentService,
   FishTelemetry,
 } from './fish-assessment.service';
+import {
+  PlantAssessmentService,
+  PlantTelemetry,
+} from './plant-assessment.service';
 import { PumpDecisionService, PumpMode } from './pump-decision.service';
 import { ReportService } from './report.service';
 
@@ -14,6 +18,7 @@ export class DecisionController {
     private readonly pump: PumpDecisionService,
     private readonly report: ReportService,
     private readonly fishAssessment: FishAssessmentService,
+    private readonly plantAssessment: PlantAssessmentService,
   ) {}
 
   /** Estado actual de la bomba y su configuración. GET /decision/pump */
@@ -59,5 +64,20 @@ export class DecisionController {
   @Post('fish-assessment/now')
   async runFishAssessment(@Body() body: { fish?: FishTelemetry }) {
     return this.fishAssessment.runNow(body);
+  }
+
+  /** Última telemetría/assessment de plantas. GET /decision/plant-assessment */
+  @Get('plant-assessment')
+  getPlantAssessment() {
+    return { plants: this.plantAssessment.getLastPlants() };
+  }
+
+  /**
+   * Envía ahora el correo de evaluación de plantas.
+   * POST /decision/plant-assessment/now
+   */
+  @Post('plant-assessment/now')
+  async runPlantAssessment(@Body() body: { plants?: PlantTelemetry }) {
+    return this.plantAssessment.runNow(body);
   }
 }

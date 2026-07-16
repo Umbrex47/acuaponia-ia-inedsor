@@ -43,5 +43,14 @@ fish-detection/datasets/
 fish-detection/runs/
 fish-detection/models/*.pt
 fish-detection/models/*.onnx
+
+# Detección de plantas
+plant-detection/datasets/
+plant-detection/data/
+plant-detection/runs/
+plant-detection/models/*.pt
+plant-detection/models/*.onnx
+plant-detection/models/*.json
+
 *.pt
 *.onnx

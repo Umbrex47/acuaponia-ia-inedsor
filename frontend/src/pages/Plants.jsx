@@ -9,6 +9,7 @@ export default function Plants() {
   const { plants } = state;
   const [bed, setBed] = useState(plants.bed);
   const [growth, setGrowth] = useState(plants.growthPercent);
+  const topHypothesis = plants.assessment?.hypotheses?.[0];
 
   useEffect(() => {
     setBed(plants.bed);
@@ -67,7 +68,7 @@ export default function Plants() {
           accentClass="text-accent-green"
         />
         <div className="mt-3 text-sm text-ink/60">
-          Cámara situada en la cama de cultivo · 1080p · 30 fps
+          Cámara en cama de cultivo · detección de salud / anomalías
         </div>
       </div>
 
@@ -87,6 +88,25 @@ export default function Plants() {
             <option>Cama 3 · DWC</option>
           </select>
           <div className="kv-row">{plants.species}</div>
+          <div className="kv-row">
+            Plantas detectadas:{' '}
+            <span className="font-semibold text-accent-green">
+              {plants.count == null ? '—' : plants.count}
+            </span>
+          </div>
+          {plants.avgHealthScore != null && (
+            <div className="kv-row">
+              Score de salud:{' '}
+              <span className="font-semibold">
+                {Math.round(Number(plants.avgHealthScore) * 100)}%
+              </span>
+            </div>
+          )}
+          {topHypothesis && (
+            <div className="rounded-md border border-ink/15 bg-ink/5 px-3 py-2 text-sm">
+              {topHypothesis.message}
+            </div>
+          )}
         </div>
 
         <div className="text-center">

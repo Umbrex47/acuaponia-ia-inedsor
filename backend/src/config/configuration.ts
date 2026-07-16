@@ -75,6 +75,17 @@ export default () => ({
         10,
       ),
     },
+    plantAssessment: {
+      enabled: process.env.PLANT_ASSESSMENT_ENABLED !== 'false',
+      mailThreshold: parseInt(
+        process.env.PLANT_ASSESS_MAIL_THRESHOLD ?? '50',
+        10,
+      ),
+      cooldownMs: parseInt(
+        process.env.PLANT_ASSESS_MAIL_COOLDOWN_MS ?? '300000',
+        10,
+      ),
+    },
   },
   mongodb: {
     // Si MONGODB_URI está vacío, el registro en base de datos se deshabilita.

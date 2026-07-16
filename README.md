@@ -89,6 +89,8 @@ Configura en `frontend/.env`:
 - [backend/README.md](./backend/README.md) — API, topics y payloads MQTT
 - [fish-detection/README.md](./fish-detection/README.md) — YOLO peces + reentrenamiento
 - [docs/fish-detection-plan.md](./docs/fish-detection-plan.md) — plan de implementación + upgrade DeepFish
+- [docs/plant-detection-plan.md](./docs/plant-detection-plan.md) — plan IA plantas + PlantVillage/PlantDoc
+- [plant-detection/README.md](./plant-detection/README.md) — salud/anomalías vegetales
 - [camera-publisher/README.md](./camera-publisher/README.md) — cámara + detección en vivo
 
 ## Detección de peces (resumen)
@@ -98,3 +100,11 @@ Configura en `frontend/.env`:
 3. Telemetría MQTT: `aquaponic/fish/telemetry` (count, `activityState`, assessment).
 4. Correo de evaluación: backend `FishAssessmentService` (umbrales en `.env`).
 5. Reentrenar / DeepFish: ver `fish-detection/README.md`.
+
+## Detección de plantas (resumen)
+
+1. Pipeline: `plant-detection/` (ExG + EfficientNet / heurísticas).
+2. Entrenar: `python scripts/train_health.py` (PlantVillage) o `train_bootstrap.py`.
+3. `PLANT_DETECT_ENABLED=true` en camera-publisher → `aquaponic/plants/telemetry`.
+4. Correo: `PlantAssessmentService` (`PLANT_ASSESS_*` en `.env`).
+5. PlantDoc YOLO: `scripts/download_plantdoc.py` + `train_detect.py`.
