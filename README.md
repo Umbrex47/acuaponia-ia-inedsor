@@ -91,6 +91,7 @@ Configura en `frontend/.env`:
 - [docs/fish-detection-plan.md](./docs/fish-detection-plan.md) — plan de implementación + upgrade DeepFish
 - [docs/plant-detection-plan.md](./docs/plant-detection-plan.md) — plan IA plantas + PlantVillage/PlantDoc
 - [docs/model-weights.md](./docs/model-weights.md) — pesos a descargar / entrenar (peces y plantas)
+- [docs/investigacion-decisiones-acuaponia.md](./docs/investigacion-decisiones-acuaponia.md) — pregunta CSI / diseño del motor de decisiones
 - [plant-detection/README.md](./plant-detection/README.md) — salud/anomalías vegetales
 - [camera-publisher/README.md](./camera-publisher/README.md) — cámara + detección en vivo
 
