@@ -87,6 +87,7 @@ Configura en `frontend/.env`:
 
 - [frontend/README.md](./frontend/README.md) — UI y pantallas
 - [backend/README.md](./backend/README.md) — API, topics y payloads MQTT
+- [docs/deploy-render-vercel.md](./docs/deploy-render-vercel.md) — despliegue en Render + Vercel con EMQX Cloud
 - [fish-detection/README.md](./fish-detection/README.md) — YOLO peces + reentrenamiento
 - [docs/fish-detection-plan.md](./docs/fish-detection-plan.md) — plan de implementación + upgrade DeepFish
 - [docs/plant-detection-plan.md](./docs/plant-detection-plan.md) — plan IA plantas + PlantVillage/PlantDoc

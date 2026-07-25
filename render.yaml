@@ -1,0 +1,110 @@
+# Blueprint de Render para el backend NestJS de Aquaponic OS.
+#
+# Uso: Render Dashboard → New → Blueprint → selecciona este repo.
+# Render construye la imagen con backend/Dockerfile (multi-etapa, ya probado).
+#
+# Las variables marcadas con `sync: false` NO se guardan en el repo: Render las
+# pide en el formulario la primera vez que creas el Blueprint. Ahí es donde van
+# la URL/usuario/clave de EMQX, la URI de Mongo Atlas y los tokens de alertas.
+#
+# El frontend NO se despliega aquí: va en Vercel (ver docs/deploy-render-vercel.md).
+
+services:
+  - type: web
+    name: aquaponic-backend
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    # Solo reconstruye cuando cambia el backend.
+    buildFilter:
+      paths:
+        - backend/**
+        - render.yaml
+    envVars:
+      - key: PORT
+        value: 8080
+
+      # ── Broker MQTT (EMQX Cloud Serverless, TLS) ──
+      # MQTT_URL con formato mqtts://<host>:8883
+      - key: MQTT_URL
+        sync: false
+      - key: MQTT_USERNAME
+        sync: false
+      - key: MQTT_PASSWORD
+        sync: false
+      - key: MQTT_CLIENT_ID
+        value: aquaponic-backend-render
+      - key: MQTT_RECONNECT_MS
+        value: 3000
+      - key: MQTT_TOPIC_PREFIX
+        value: aquaponic
+
+      # Hardware real publicando: el simulador debe quedar apagado.
+      - key: MQTT_DEMO_ENABLED
+        value: false
+      - key: MQTT_DEMO_INTERVAL_MS
+        value: 5000
+
+      # ── Persistencia (opcional: MongoDB Atlas free tier) ──
+      # Deja MONGODB_URI vacío para desplegar sin base de datos.
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: aquaponic
+      - key: READINGS_PERSIST_ENABLED
+        value: true
+
+      # ── Alertas por correo (Nodemailer) ──
+      # MAIL_HOST vacío deshabilita el correo.
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: 465
+      - key: MAIL_SECURE
+        value: true
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        value: Aquaponic OS <no-reply@aquaponic.local>
+      - key: MAIL_TO
+        sync: false
+
+      # ── Alertas por Telegram ──
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_IDS
+        sync: false
+
+      - key: ALERTS_ENABLED
+        value: true
+      - key: ALERTS_COOLDOWN_MS
+        value: 300000
+
+      # ── Motor de decisiones (bomba + reportes) ──
+      - key: DECISION_ENABLED
+        value: true
+      - key: PUMP_ACTUATOR_ID
+        value: bomba_agua
+      - key: PUMP_ON_LEVEL
+        value: 24
+      - key: PUMP_OFF_LEVEL
+        value: 20
+      - key: PUMP_MIN_STATE_MS
+        value: 60000
+      - key: REPORT_ENABLED
+        value: false
+      - key: REPORT_CRON
+        value: 0 8 * * *
+      - key: REPORT_WINDOW_HOURS
+        value: 24
+
+      - key: FISH_ASSESSMENT_ENABLED
+        value: false
+      - key: PLANT_ASSESSMENT_ENABLED
+        value: false
