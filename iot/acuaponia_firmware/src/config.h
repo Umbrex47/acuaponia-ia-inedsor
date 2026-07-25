@@ -14,7 +14,7 @@
 // 1-Wire; por eso el termómetro va en GPIO 4 (con pull-up de 4.7k a 3.3 V).
 #define PIN_TEMP   4         // DATA del DS18B20 (1-Wire) + pull-up 4.7k
 #define PIN_EC     32        // AO del medidor de electroconductividad (ADC1)
-#define PIN_TURB   33        // AO del sensor de turbidez (ADC1) — reservado
+#define PIN_TURB   33        // AO del sensor de turbidez (ADC1; divisor si AO>3.3 V)
 
 // Sensor ultrasónico de nivel de agua (JSN-SR04T / HC-SR04)
 #define PIN_LEVEL_TRIG  5    // Trigger (salida)
@@ -30,7 +30,18 @@
 #define PIN_I2C_SDA  21
 #define PIN_I2C_SCL  22
 
+// ── SoftAP del portal de configuración (siempre activo, AP+STA) ──
+#define AP_SSID      "Aquaponic-Setup"
+#define AP_PASSWORD  "acuaponia"     // mín. 8 caracteres (WPA2)
+#define AP_HTTP_PORT 80
+
+// ── NTP (obligatorio con MQTT sobre TLS: valida fechas del certificado) ──
+#define NTP_SERVER_1     "pool.ntp.org"
+#define NTP_SERVER_2     "time.nist.gov"
+#define NTP_TIMEOUT_MS   8000
+#define MQTT_TLS_TIMEOUT_S  15       // handshake TLS
+
 // ── Temporización ──
 #define PUBLISH_INTERVAL_MS  2000    // cada cuánto se publica al broker
 #define MQTT_RETRY_MS        3000    // reintento de conexión MQTT
-#define WIFI_TIMEOUT_MS      20000   // espera máx. de conexión WiFi
+#define WIFI_TIMEOUT_MS      20000   // espera máx. de conexión WiFi (STA)

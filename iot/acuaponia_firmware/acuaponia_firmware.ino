@@ -2,9 +2,14 @@
 //   Aquaponic OS · Firmware ESP32 (arquitectura modular)
 //
 //   El .ino solo orquesta. La lógica vive en src/:
-//     - src/config.h            → pines, intervalos
-//     - src/net/                → WiFi y MQTT
+//     - src/config.h            → pines, intervalos, SoftAP
+//     - src/net/                → WiFi AP+STA, MQTT, portal, NVS
 //     - src/sensors/            → sensores + registro
+//
+//   Portal de configuración (siempre activo):
+//     1. Conéctate al SoftAP "Aquaponic-Setup" (clave: acuaponia)
+//     2. Abre http://192.168.4.1
+//     3. Ajusta WiFi hogar + MQTT, reinicia o deep sleep
 //
 //   Para AGREGAR un sensor:
 //     1. Crea src/sensors/<sensor>.h / .cpp (funciones begin + read)
@@ -18,8 +23,10 @@
 
 #include "arduino_secrets.h"
 #include "src/config.h"
+#include "src/net/config_store.h"
 #include "src/net/wifi_manager.h"
 #include "src/net/mqtt_manager.h"
+#include "src/net/config_portal.h"
 #include "src/sensors/sensor_registry.h"
 
 static unsigned long lastPublishMs = 0;
@@ -28,14 +35,13 @@ void publishTelemetry() {
   StaticJsonDocument<512> doc;
   JsonObject sensors = doc.createNestedObject("sensors");
 
-  // Cada sensor activo agrega su bloque; los inválidos se omiten.
   sensors_build_payload(sensors);
-  if (sensors.size() == 0) return;   // nada válido que enviar
+  if (sensors.size() == 0) return;
 
   JsonObject system = doc.createNestedObject("system");
   system["status"]      = "stable";
   system["statusLabel"] = "Estable";
-  doc["device"]   = MQTT_CLIENT_ID;
+  doc["device"]   = mqtt_client_id();
   doc["uptimeMs"] = millis();
 
   char buffer[512];
@@ -51,12 +57,15 @@ void setup() {
   Serial.println();
   Serial.println("=== Aquaponic ESP32 (modular) · arrancando ===");
 
+  config_store_begin();
   sensors_begin();
   wifi_begin();
+  config_portal_begin();
   mqtt_begin();
 }
 
 void loop() {
+  config_portal_loop();
   wifi_ensure_connected();
   mqtt_ensure_connected();
   mqtt_loop();
