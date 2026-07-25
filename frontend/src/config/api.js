@@ -25,6 +25,43 @@ function flag(runtimeKey, envKey, fallback) {
   return String(v) !== 'false';
 }
 
+/**
+ * Normaliza la URL del WebSocket del backend Nest (`@WebSocketGateway({ path: '/ws' })`).
+ * - Convierte http(s) → ws(s) si alguien pegó la URL de la API.
+ * - Si la URL no tiene path (o solo `/`), fuerza `/ws`.
+ * - Si ya termina en `/ws`, la deja igual.
+ */
+function normalizeWsUrl(raw) {
+  if (!raw || typeof raw !== 'string') return 'ws://localhost:8080/ws';
+
+  let value = raw.trim();
+  if (value.startsWith('https://')) value = `wss://${value.slice('https://'.length)}`;
+  else if (value.startsWith('http://')) value = `ws://${value.slice('http://'.length)}`;
+
+  try {
+    const parsed = new URL(value);
+    // Origen puro (wss://host o wss://host/) → siempre /ws.
+    // Un path explícito distinto (p. ej. /ws, /mqtt) se respeta.
+    if (!parsed.pathname || parsed.pathname === '/') {
+      parsed.pathname = '/ws';
+    }
+    // Evitar barra final: wss://host/ws/ no es el path del gateway.
+    return `${parsed.protocol}//${parsed.host}${parsed.pathname}`.replace(/\/+$/, '') ||
+      'ws://localhost:8080/ws';
+  } catch {
+    return 'ws://localhost:8080/ws';
+  }
+}
+
+function resolveWsUrl() {
+  const explicit = pick('wsUrl', 'VITE_WS_URL', '');
+  if (explicit) return normalizeWsUrl(explicit);
+
+  // Sin VITE_WS_URL: derivar del host HTTP de la API + /ws.
+  const apiBase = pick('apiUrl', 'VITE_API_URL', 'http://localhost:8080');
+  return normalizeWsUrl(apiBase);
+}
+
 export const apiConfig = {
   // Muestra el aviso de demostración al cargar la página.
   demoMode: flag('demoMode', 'VITE_DEMO_MODE', false),
@@ -34,7 +71,7 @@ export const apiConfig = {
   },
   websocket: {
     enabled: flag('wsEnabled', 'VITE_WS_ENABLED', true),
-    url: pick('wsUrl', 'VITE_WS_URL', 'ws://localhost:8080/ws'),
+    url: resolveWsUrl(),
     reconnectMs: 3000,
     maxRetries: Infinity,
   },

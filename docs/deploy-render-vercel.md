@@ -130,7 +130,8 @@ Notas importantes:
   Actívalos junto con `REPORT_ENABLED=true` cuando quieras los reportes.
 
 Anota la URL pública que te asigna Render, algo como
-`https://aquaponic-backend.onrender.com`. La necesitas en el paso siguiente.
+`https://acuaponia-ia-inedsor.onrender.com`. La necesitas en el paso siguiente
+(HTTP) y como `wss://…/ws` (WebSocket — **no olvides el sufijo `/ws`**).
 
 ---
 
@@ -162,8 +163,8 @@ de servidor: todo lo que pongas aquí es visible en el navegador, y hay que
 Defínelas en Production (y Preview, si quieres previews funcionales):
 
 ```bash
-VITE_API_URL=https://aquaponic-backend.onrender.com
-VITE_WS_URL=wss://aquaponic-backend.onrender.com/ws
+VITE_API_URL=https://acuaponia-ia-inedsor.onrender.com
+VITE_WS_URL=wss://acuaponia-ia-inedsor.onrender.com/ws
 VITE_WS_ENABLED=true
 
 VITE_DEMO_MODE=false
@@ -184,8 +185,14 @@ VITE_CAMERA_PLANTS_URL=
 
 - **`https://` y `wss://` son obligatorios.** Vercel sirve por HTTPS y el
   navegador bloquea cualquier `http://` o `ws://` por contenido mixto.
-- Sustituye `aquaponic-backend.onrender.com` por tu dominio real de Render.
+- **`VITE_WS_URL` debe terminar en `/ws`.** El gateway Nest escucha solo ahí
+  (`@WebSocketGateway({ path: '/ws' })`). Si pones solo el origen
+  (`wss://….onrender.com` o `…/`), el navegador falla con
+  `WebSocket connection to 'wss://…/' failed`. Sustituye el host por el de tu
+  servicio en Render si no es `acuaponia-ia-inedsor`.
 - `VITE_MQTT_ENABLED=false` mantiene la ruta única: broker → backend → WS.
+- Tras cambiar cualquier `VITE_*` en Vercel hay que **Redeploy** (Vite las
+  incrusta en build time; el runtime `config.js` de Vercel no las redefine).
 
 ### 2.3 Opcional: MQTT directo desde el navegador
 
