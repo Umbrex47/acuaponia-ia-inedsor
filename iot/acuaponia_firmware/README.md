@@ -51,8 +51,46 @@ Desde la web puedes:
 - **Apagar** (deep sleep; despierta con el botón EN/RESET)
 
 Los valores se guardan en **NVS**. `arduino_secrets.h` solo se usa la primera vez
-(o si borras la flash). Tras “Guardar y reiniciar”, la ESP32 reinicia y aplica
-la nueva red.
+(o si borras la flash / usas «Restaurar broker de fábrica»). Tras “Guardar y
+reiniciar”, la ESP32 reinicia y aplica la nueva red.
+
+### Si el ESP32 no publica en EMQX (causa frecuente)
+
+El portal SoftAP **pisa** `arduino_secrets.h`. Si alguna vez guardaste el
+Mosquitto local (`10.x` / `192.168.x`, puerto **1883**, TLS off), esa config
+sigue en NVS aunque recompiles con EMQX en secrets.
+
+**Opción A — SoftAP (recomendada):**
+
+1. Conéctate a `Aquaponic-Setup` / `acuaponia` → `http://192.168.4.1`
+2. Broker:
+   - Host: `a91836cf.ala.us-east-1.emqxsl.com`
+   - **TLS activado**, puerto **8883**
+   - Usuario `esp32` / clave del broker
+   - ID: `esp32-acuaponia-01`
+3. O pulsa **Restaurar broker de fábrica** (copia MQTT desde secrets, conserva WiFi)
+4. Guarda / reinicia
+
+**Opción B — Borrar NVS al flashear:** en Arduino IDE → *Herramientas* →
+*Erase Flash: All Flash Contents* (o “Erase All”) y vuelve a subir el sketch.
+
+En Serial (115200) deberías ver, en orden:
+
+```
+[CFG] Cargado desde NVS · … MQTT=a91836cf…:8883 (TLS sí)
+   (o mensaje de migración automática del broker LAN antiguo)
+[WiFi] STA OK · IP: …
+[NTP] Hora sincronizada · epoch=…
+[MQTT] Conectando a a91836cf…:8883 (TLS) como esp32-acuaponia-01
+[MQTT] Conectado
+[MQTT] publish → aquaponic/sensors/telemetry · …B · OK
+```
+
+Si aparece `MQTT=10.…:1883 (TLS no)` sin migración, actualiza por SoftAP.
+Si `[NTP] Sin hora válida`, la red no llega a Internet (hotspot / DNS).
+Si `Falló (rc=…)`, revisa usuario/clave o CA.
+Si `Sin lecturas válidas · publicando heartbeat`, MQTT funciona pero los
+sensores no están midiendo.
 
 ## Termómetro sumergible DFRobot (DS18B20)
 

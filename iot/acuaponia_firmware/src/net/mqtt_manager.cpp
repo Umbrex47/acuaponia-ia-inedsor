@@ -52,7 +52,8 @@ void mqtt_begin() {
 
   client.setServer(cfg.mqttHost, cfg.mqttPort);
   client.setKeepAlive(30);
-  client.setBufferSize(512);
+  // 7 sensores + system/device pueden superar 512 B fácilmente.
+  client.setBufferSize(1536);
 }
 
 void mqtt_apply_config() {
@@ -79,7 +80,10 @@ static bool connectOnce() {
     Serial.println("[MQTT] Conectado");
     client.publish(MQTT_TOPIC_STATUS, "{\"online\":true}", true);
   } else {
-    Serial.printf("[MQTT] Falló (rc=%d)\n", client.state());
+    // PubSubClient: -4 timeout, -3 lost, -2 failed, -1 disconnected,
+    // 1..5 = refusals del broker (4=bad user/pass, 5=unauthorized).
+    Serial.printf("[MQTT] Falló (rc=%d) · revisa host/TLS/NTP/credenciales\n",
+                  client.state());
   }
   return ok;
 }

@@ -176,6 +176,7 @@ button:active{transform:scale(.99)}
     </div>
 
     <h2>Broker MQTT</h2>
+    <p class="hint" style="margin:0 0 .85rem">Nube EMQX: host <code>….emqxsl.com</code>, puerto <strong>8883</strong>, TLS activado, usuario/clave del broker. Si ves una IP tipo <code>10.x</code> / <code>192.168.x</code> y puerto 1883, es una config LAN antigua en NVS.</p>
     <div class="field">
       <label for="mqttHost">Host o IP</label>
       <input id="mqttHost" name="mqttHost" maxlength="79" required/>
@@ -205,6 +206,7 @@ button:active{transform:scale(.99)}
 
     <div class="actions">
       <button type="submit" class="btn-primary">Guardar y reiniciar</button>
+      <button type="button" class="btn-ghost" id="btnRestoreMqtt">Restaurar broker de fábrica</button>
       <button type="button" class="btn-warn" id="btnReboot">Reiniciar ahora</button>
       <button type="button" class="btn-danger" id="btnSleep">Apagar (deep sleep)</button>
     </div>
@@ -265,6 +267,13 @@ $('btnReboot').addEventListener('click', async ()=>{
   if(!confirm('¿Reiniciar la ESP32?')) return;
   await fetch('/api/reboot',{method:'POST'});
   toast('Reiniciando…');
+});
+$('btnRestoreMqtt').addEventListener('click', async ()=>{
+  if(!confirm('¿Restaurar host/puerto/TLS/usuario MQTT desde arduino_secrets.h? Se conserva el WiFi.')) return;
+  const r=await fetch('/api/config/restore-mqtt',{method:'POST'});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){ toast(j.error||'No se pudo restaurar'); return; }
+  toast('Broker restaurado. Reiniciando…');
 });
 $('btnSleep').addEventListener('click', async ()=>{
   if(!confirm('La ESP32 entrará en deep sleep. Despierta con el botón EN/RESET.')) return;
@@ -409,6 +418,17 @@ static void handlePostConfig() {
   actionAtMs = millis() + 800;
 }
 
+static void handleRestoreMqtt() {
+  if (!config_restore_mqtt_defaults()) {
+    sendJson(500, "{\"error\":\"No se pudo restaurar MQTT en NVS\"}");
+    return;
+  }
+  mqtt_apply_config();
+  sendJson(200, "{\"ok\":true,\"rebooting\":true}");
+  rebootPending = true;
+  actionAtMs = millis() + 800;
+}
+
 static void handleScan() {
   // softAP + scan puede devolver listas cortas; es suficiente para elegir SSID.
   int n = WiFi.scanNetworks(/*async=*/false, /*hidden=*/false);
@@ -459,6 +479,7 @@ void config_portal_begin() {
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/config", HTTP_GET, handleGetConfig);
   server.on("/api/config", HTTP_POST, handlePostConfig);
+  server.on("/api/config/restore-mqtt", HTTP_POST, handleRestoreMqtt);
   server.on("/api/scan", HTTP_GET, handleScan);
   server.on("/api/reboot", HTTP_POST, handleReboot);
   server.on("/api/shutdown", HTTP_POST, handleShutdown);

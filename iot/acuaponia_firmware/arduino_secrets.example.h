@@ -6,6 +6,10 @@
 // Estos valores son la SEMILLA inicial. Tras el primer arranque puedes
 // cambiar WiFi/MQTT desde el portal SoftAP (Aquaponic-Setup → 192.168.4.1);
 // lo guardado en NVS tiene prioridad sobre este archivo.
+//
+// Si guardaste un broker LAN (IP 10.x / 192.168.x, puerto 1883, TLS off) y
+// luego pasaste a EMQX Cloud aquí, el firmware migra solo ese caso al boot.
+// También: SoftAP → «Restaurar broker de fábrica», o Erase Flash al subir.
 
 // WiFi (red del hogar / laboratorio)
 #define WIFI_SSID       "TU_RED_WIFI"

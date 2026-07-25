@@ -27,3 +27,9 @@ bool config_save(const DeviceConfig& cfg);
 
 // true si ya había datos guardados en NVS (no solo defaults en RAM).
 bool config_was_persisted();
+
+// Reescribe solo el bloque MQTT desde arduino_secrets.h (conserva WiFi).
+bool config_restore_mqtt_defaults();
+
+// Borra el namespace NVS "aquaponic" y vuelve a los defaults de secrets en RAM.
+bool config_clear_nvs();

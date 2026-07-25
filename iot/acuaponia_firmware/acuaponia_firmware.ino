@@ -32,20 +32,29 @@
 static unsigned long lastPublishMs = 0;
 
 void publishTelemetry() {
-  StaticJsonDocument<512> doc;
+  // Con varios sensores el JSON supera 512 B; 1536 deja margen.
+  StaticJsonDocument<1536> doc;
   JsonObject sensors = doc.createNestedObject("sensors");
 
   sensors_build_payload(sensors);
-  if (sensors.size() == 0) return;
+  if (sensors.size() == 0) {
+    // Sigue publicando un heartbeat para diagnosticar conectividad MQTT
+    // aunque ningún sensor esté listo (antes se silenciaba por completo).
+    Serial.println("[MQTT] Sin lecturas válidas · publicando heartbeat");
+  }
 
   JsonObject system = doc.createNestedObject("system");
-  system["status"]      = "stable";
-  system["statusLabel"] = "Estable";
+  system["status"]      = sensors.size() ? "stable" : "no_sensors";
+  system["statusLabel"] = sensors.size() ? "Estable" : "Sin sensores";
   doc["device"]   = mqtt_client_id();
   doc["uptimeMs"] = millis();
 
-  char buffer[512];
+  char buffer[1536];
   size_t n = serializeJson(doc, buffer, sizeof(buffer));
+  if (n == 0 || n >= sizeof(buffer)) {
+    Serial.printf("[MQTT] JSON truncado/vacío · n=%u · no se publica\n", (unsigned)n);
+    return;
+  }
   bool ok = mqtt_publish(MQTT_TOPIC_TELEMETRY, (const uint8_t*)buffer, n, false);
   Serial.printf("[MQTT] publish → %s · %uB · %s\n",
                 MQTT_TOPIC_TELEMETRY, (unsigned)n, ok ? "OK" : "FAIL");

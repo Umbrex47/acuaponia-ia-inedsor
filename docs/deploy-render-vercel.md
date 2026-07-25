@@ -264,6 +264,10 @@ Recordatorios del firmware:
   Sin NTP el TLS falla.
 - El portal SoftAP (`Aquaponic-Setup` → `192.168.4.1`) sigue siendo la vía para
   cambiar WiFi y broker en campo; lo guardado en NVS pisa a `arduino_secrets.h`.
+  Si NVS aún tiene un Mosquitto LAN (`10.x`/`192.168.x:1883` sin TLS) y
+  `arduino_secrets.h` apunta a EMQX Cloud, el firmware **migra solo** el bloque
+  MQTT al arrancar. También puedes pulsar «Restaurar broker de fábrica» en el
+  portal, o borrar flash (Erase All) al reflash.
 - Los topics están fijos en firmware (`aquaponic/sensors/telemetry` y
   `aquaponic/sensors/status`) y coinciden con `MQTT_TOPIC_PREFIX=aquaponic`
   del backend. No los cambies en un solo lado.
