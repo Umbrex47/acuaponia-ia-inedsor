@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import ConnectionStatus from './components/ConnectionStatus';
 import DemoNoticeModal from './components/DemoNoticeModal';
+import NotificationCenter from './components/NotificationCenter';
 import Dashboard from './pages/Dashboard';
 import Parameters from './pages/Parameters';
 import Sensors from './pages/Sensors';
 import Plants from './pages/Plants';
 import Fish from './pages/Fish';
+import Assistant from './pages/Assistant';
 
 const SCREENS = {
   dashboard: { title: 'Dashboard', component: Dashboard },
@@ -14,6 +16,7 @@ const SCREENS = {
   sensors: { title: 'Estado de sensores', component: Sensors },
   plants: { title: 'Información de plantas', component: Plants },
   fish: { title: 'Información de peces', component: Fish },
+  assistant: { title: 'Asistente', component: Assistant },
 };
 
 export default function App() {
@@ -64,6 +67,7 @@ export default function App() {
         </nav>
 
         <ConnectionStatus />
+        <NotificationCenter />
       </header>
 
       <main className="px-4 sm:px-8 pb-12 flex-1 w-full max-w-6xl mx-auto">

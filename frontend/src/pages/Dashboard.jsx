@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import SensorGauge from '../components/SensorGauge';
 import DualCameraView from '../components/DualCameraView';
+import ActuatorPanel from '../components/ActuatorPanel';
+import SimulationPresets from '../components/SimulationPresets';
 import { Icon } from '../components/Icon';
 import { useAquaponic } from '../context/useAquaponic';
+import { getOrCreateClientId } from '../hooks/useAssistant';
 import {
   SENSOR_META,
   SENSOR_ORDER,
@@ -16,6 +19,7 @@ export default function Dashboard({ navigate }) {
   const { state, systemMeta, isLive } = useAquaponic();
   const { sensors, fish, plants, system } = state;
   const [showAll, setShowAll] = useState(false);
+  const [clientId] = useState(getOrCreateClientId());
 
   // Sensores esenciales primero; el resto se revela con "Ver más".
   const essentialKeys = SENSOR_ORDER.filter((key) =>
@@ -85,6 +89,10 @@ export default function Dashboard({ navigate }) {
         </div>
       </div>
 
+      <div className="mt-8 max-w-4xl mx-auto" data-anim="btn">
+        <SimulationPresets />
+      </div>
+
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8 justify-items-center">
         {visibleKeys.map((key, i) => {
           const reading = sensors[key];
@@ -122,6 +130,17 @@ export default function Dashboard({ navigate }) {
       <div data-anim="cam" className="mt-10 max-w-5xl mx-auto">
         <DualCameraView fish={fish} plants={plants} />
       </div>
+
+      <section className="mt-10 max-w-5xl mx-auto">
+        <h2 className="font-display font-bold text-xl tracking-tight mb-1">
+          Control de actuadores
+        </h2>
+        <p className="text-sm text-ink/60 mb-4">
+          Enciende o apaga la bomba de agua y el aireador. En modo IA el
+          asistente también puede actuar; usa Manual para bloquearlo.
+        </p>
+        <ActuatorPanel clientId={clientId} />
+      </section>
 
       <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
         <button data-anim="btn" onClick={() => navigate('sensors')} className="btn-outline text-sm">

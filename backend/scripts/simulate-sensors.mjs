@@ -16,6 +16,10 @@
  *   node scripts/simulate-sensors.mjs --speed 3       # cambios 3x más rápidos
  *   node scripts/simulate-sensors.mjs --only ph,temperatura,nivelAgua
  *   node scripts/simulate-sensors.mjs --drift         # deja que se salga de rango
+ *   node scripts/simulate-sensors.mjs --scenario temperatura:critical
+ *                                          # fija un sensor a un status concreto
+ *                                          # (los demás siguen su random-walk)
+ *   node scripts/simulate-sensors.mjs --scenario nivelAgua:critical,temperatura:warn
  *
  * Lee la config del broker desde backend/.env (MQTT_URL, MQTT_TOPIC_PREFIX…).
  */
@@ -42,7 +46,7 @@ const SENSORS = {
 
 // ── Parseo de argumentos ────────────────────────────────────────────────
 function parseArgs(argv) {
-  const args = { interval: 5000, speed: 1, drift: false, only: null };
+  const args = { interval: 5000, speed: 1, drift: false, only: null, scenario: {} };
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--drift') args.drift = true;
@@ -53,6 +57,17 @@ function parseArgs(argv) {
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+    } else if (arg === '--scenario') {
+      const raw = String(argv[++i] || '');
+      const valid = ['ok', 'warn', 'critical'];
+      for (const pair of raw.split(',')) {
+        const [k, v] = pair.split(':').map((s) => s && s.trim());
+        if (!k || !v || !valid.includes(v)) {
+          console.warn(`[sim] --scenario ignora entrada inválida: "${pair}" (esperado key:status)`);
+          continue;
+        }
+        args.scenario[k] = v;
+      }
     }
   }
   return args;
@@ -113,17 +128,70 @@ function nextValue(key) {
   return round(value, def.decimals);
 }
 
+// ── Status según umbrales (mismo criterio que el firmware) ───────────────
+// Optimal = "ok". Un 20 % más allá del optimal por lado = "warn".
+// Más allá del 20 % = "critical". Así los tres rangos quedan bien separados.
+function statusFromValue(key, value) {
+  const [lo, hi] = SENSORS[key].optimal;
+  const span = hi - lo;
+  const warnMargin = span * 0.2;
+  if (value >= lo && value <= hi) return 'ok';
+  if (value >= lo - warnMargin && value <= hi + warnMargin) return 'warn';
+  return 'critical';
+}
+
+// ── Valor forzado según status (para --scenario) ─────────────────────────
+// Para "warn" elegimos el lado más lejano del centro: si hi > lo, +5 %
+// sobre hi; si lo < hi, −5 % sobre lo. Así garantizamos salir del optimal
+// sin importar que optimal coincida con los extremos del sensor.
+function valueForStatus(key, status) {
+  const def = SENSORS[key];
+  const [lo, hi] = def.optimal;
+  const center = (lo + hi) / 2;
+  const span = hi - lo;
+  const step = Math.max(span * 0.05, (def.max - def.min) * 0.02);
+  switch (status) {
+    case 'ok':       return clamp(center, def.min, def.max);
+    case 'warn': {
+      // Elige el lado más amplio (en el span del sensor) para garantizar salida.
+      const headroomHi = def.max - hi;
+      const headroomLo = lo - def.min;
+      if (headroomHi >= headroomLo) return clamp(hi + step, def.min, def.max);
+      return clamp(lo - step, def.min, def.max);
+    }
+    case 'critical': {
+      // Pega al extremo absoluto del sensor en el lado con más headroom.
+      const headroomHi = def.max - hi;
+      const headroomLo = lo - def.min;
+      if (headroomHi >= headroomLo) return def.max - (def.max - def.min) * 0.02;
+      return def.min + (def.max - def.min) * 0.02;
+    }
+    default: return center;
+  }
+}
+
 function buildPayload() {
   const sensors = {};
   for (const key of keys) {
     const def = SENSORS[key];
-    const value = nextValue(key);
+    const forcedStatus = args.scenario[key] || null;
+
+    let value, status;
+    if (forcedStatus) {
+      status = forcedStatus;
+      value = valueForStatus(key, forcedStatus);
+      state[key] = value;  // sincroniza el walk para que al soltar el override no salte
+    } else {
+      value = nextValue(key);
+      status = statusFromValue(key, value);
+    }
+
     const percent = clamp(
       Math.round(((value - def.min) / (def.max - def.min)) * 100),
       0,
       100,
     );
-    sensors[key] = { value, unit: def.unit, percent, status: 'ok' };
+    sensors[key] = { value: round(value, def.decimals), unit: def.unit, percent, status };
   }
   return {
     sensors,
@@ -154,6 +222,11 @@ client.on('connect', () => {
   console.log(`[sim] conectado. Publicando en "${topic}" cada ${args.interval} ms`);
   console.log(`[sim] sensores: ${keys.join(', ')}`);
   console.log(`[sim] modo: ${args.drift ? 'drift (puede salirse de rango)' : 'estable'} · speed=${args.speed}`);
+  const scenarioKeys = Object.keys(args.scenario);
+  if (scenarioKeys.length) {
+    console.log(`[sim] escenarios forzados:`);
+    for (const k of scenarioKeys) console.log(`       - ${k} → ${args.scenario[k]}`);
+  }
   console.log('[sim] Ctrl+C para detener.\n');
 
   const tick = () => {

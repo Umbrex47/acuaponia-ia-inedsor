@@ -41,7 +41,12 @@ function pick(obj, keys) {
 }
 
 /**
- * Construye un sensor SOLO si llega un valor real. Acepta dos formatos:
+ * Construye un sensor si llega un valor real O si llega un slot explícito
+ * con `status: "unavailable"` (la ESP32 publica sensores caídos con
+ * `value: null` + `status: "unavailable"` para que el dashboard los
+ * muestre como "No disponible" en vez de ocultarlos).
+ *
+ * Acepta dos formatos:
  *  - Objeto:  { value, percent, unit, status }
  *  - Escalar: 27.4  (+ opcional `${key}Percent` o `percent` a nivel raíz)
  * Devuelve `undefined` si el sensor no viene en el payload.
@@ -54,12 +59,17 @@ function buildSensor(source, key) {
 
   if (typeof raw === 'object') {
     const value = toNumber(raw.value);
-    if (!Number.isFinite(value)) return undefined;
+    const status = raw.status ?? 'ok';
+
+    // Sensor caído: el firmware envió `value: null` + `status: "unavailable"`.
+    // Lo dejamos pasar para que el dashboard muestre "No disponible".
+    if (!Number.isFinite(value) && status !== 'unavailable') return undefined;
+
     return {
-      value,
+      value: Number.isFinite(value) ? value : null,
       percent: clampPercent(raw.percent),
       unit: raw.unit ?? meta.unit ?? '',
-      status: raw.status ?? 'ok',
+      status,
     };
   }
 

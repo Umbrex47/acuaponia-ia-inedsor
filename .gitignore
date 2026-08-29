@@ -37,6 +37,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Documentos (binarios, no son código)
+*.docx
+*.doc
+
 # Archivos locales
 *.rar
 

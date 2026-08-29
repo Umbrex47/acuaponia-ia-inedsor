@@ -4,16 +4,16 @@
 // `optimal` define el rango saludable: por debajo es "bajo", por encima es
 // "riesgoso" y dentro es "estable".
 export const SENSOR_META = {
-  temperatura: { label: 'Temperatura', unit: '°C', color: '#0A0A0A', min: 15, max: 35, optimal: { min: 20, max: 28 } },
+  temperatura: { label: 'Temperatura', unit: '°C', color: '#0A0A0A', min: 15, max: 35, optimal: { min: 20, max: 30 } },
   ph: { label: 'pH', unit: '', color: '#0A0A0A', min: 0, max: 14, optimal: { min: 6.5, max: 8 } },
   oxigeno: { label: 'Oxígeno D', unit: 'mg/L', color: '#2563EB', min: 0, max: 15, optimal: { min: 5, max: 12 } },
   nivelAgua: { label: 'Nvl de agua', unit: 'cm', color: '#0A0A0A', min: 0, max: 32, optimal: { min: 24, max: 32 } },
   nitratos: { label: 'Nitratos', unit: 'ppm', color: '#0A0A0A', min: 0, max: 50, optimal: { min: 5, max: 40 } },
-  co2: { label: 'CO₂', unit: 'ppm', color: '#0A0A0A', min: 0, max: 1000, optimal: { min: 50, max: 600 } },
+  co2: { label: 'CO₂', unit: 'ppm', color: '#0A0A0A', min: 0, max: 1500, optimal: { min: 300, max: 1000 } },
   electroconductividad: { label: 'Electrocond.', unit: 'mS/cm', color: '#16A34A', min: 0, max: 3, optimal: { min: 0.8, max: 2 } },
   turbiedad: { label: 'Turbidez', unit: 'NTU', color: '#0A0A0A', min: 0, max: 100, optimal: { min: 0, max: 25 } },
   temperaturaAmbiente: { label: 'Temp. ambiente', unit: '°C', color: '#0A0A0A', min: 5, max: 45, optimal: { min: 18, max: 32 } },
-  humedad: { label: 'Humedad', unit: '%', color: '#2563EB', min: 0, max: 100, optimal: { min: 40, max: 75 } },
+  humedad: { label: 'Humedad', unit: '%', color: '#2563EB', min: 0, max: 100, optimal: { min: 50, max: 90 } },
   presion: { label: 'Presión', unit: 'hPa', color: '#0A0A0A', min: 900, max: 1100, optimal: { min: 950, max: 1050 } },
 };
 

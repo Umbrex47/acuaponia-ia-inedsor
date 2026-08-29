@@ -22,6 +22,9 @@
 #include <ArduinoJson.h>
 
 #include "arduino_secrets.h"
+#include "src/actuators/actuator_relay.h"
+#include "src/actuators/buzzer.h"
+#include "src/actuators/led_indicators.h"
 #include "src/config.h"
 #include "src/net/config_store.h"
 #include "src/net/wifi_manager.h"
@@ -37,15 +40,28 @@ void publishTelemetry() {
   JsonObject sensors = doc.createNestedObject("sensors");
 
   sensors_build_payload(sensors);
-  if (sensors.size() == 0) {
-    // Sigue publicando un heartbeat para diagnosticar conectividad MQTT
-    // aunque ningún sensor esté listo (antes se silenciaba por completo).
-    Serial.println("[MQTT] Sin lecturas válidas · publicando heartbeat");
+
+  // Publicamos SIEMPRE, incluso si todos los sensores son inválidos:
+  // el dashboard necesita saber que la ESP32 está viva y qué slots
+  // están en estado "unavailable". Si no publicáramos nada, el backend
+  // no podría distinguir "ESP32 caída" de "ESP32 sin sensores conectados".
+  int validCount   = 0;
+  int invalidCount = 0;
+  for (JsonPair kv : sensors) {
+    JsonObject o = kv.value().as<JsonObject>();
+    const char* s = o["status"] | "unknown";
+    if (strcmp(s, "unavailable") == 0) invalidCount++;
+    else                              validCount++;
   }
 
+  const char* sysStatus   = (validCount > 0) ? "stable" : "no_sensors";
+  const char* sysStatusLb = (validCount > 0) ? "Estable" : "Sin sensores";
+
   JsonObject system = doc.createNestedObject("system");
-  system["status"]      = sensors.size() ? "stable" : "no_sensors";
-  system["statusLabel"] = sensors.size() ? "Estable" : "Sin sensores";
+  system["status"]      = sysStatus;
+  system["statusLabel"] = sysStatusLb;
+  system["validCount"]   = validCount;
+  system["invalidCount"] = invalidCount;
   doc["device"]   = mqtt_client_id();
   doc["uptimeMs"] = millis();
 
@@ -56,8 +72,9 @@ void publishTelemetry() {
     return;
   }
   bool ok = mqtt_publish(MQTT_TOPIC_TELEMETRY, (const uint8_t*)buffer, n, false);
-  Serial.printf("[MQTT] publish → %s · %uB · %s\n",
-                MQTT_TOPIC_TELEMETRY, (unsigned)n, ok ? "OK" : "FAIL");
+  Serial.printf("[MQTT] publish → %s · %uB · %s · válidos=%d inválidos=%d\n",
+                MQTT_TOPIC_TELEMETRY, (unsigned)n, ok ? "OK" : "FAIL",
+                validCount, invalidCount);
 }
 
 void setup() {
@@ -65,6 +82,12 @@ void setup() {
   delay(200);
   Serial.println();
   Serial.println("=== Aquaponic ESP32 (modular) · arrancando ===");
+
+  // Apagar actuadores/indicadores lo antes posible para evitar pulsos
+  // de encendido durante el arranque de WiFi/MQTT.
+  relay_begin();
+  led_begin();
+  buzzer_begin();
 
   config_store_begin();
   sensors_begin();
@@ -78,6 +101,9 @@ void loop() {
   wifi_ensure_connected();
   mqtt_ensure_connected();
   mqtt_loop();
+  led_loop();
+  buzzer_loop();
+  relay_loop();
 
   if (millis() - lastPublishMs >= PUBLISH_INTERVAL_MS) {
     lastPublishMs = millis();

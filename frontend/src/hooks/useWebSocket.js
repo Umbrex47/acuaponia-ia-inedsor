@@ -5,6 +5,9 @@ export function useWebSocket({ url, enabled, reconnectMs = 3000, onMessage, onSt
   const wsRef = useRef(null);
   const retryRef = useRef(null);
   const mountedRef = useRef(true);
+  // Listeners adicionales (p.ej. NotificationCenter) que reciben TODO el tráfico
+  // sin tener que duplicar la conexión WS.
+  const extraListenersRef = useRef(new Set());
 
   useEffect(() => {
     mountedRef.current = true;
@@ -12,6 +15,12 @@ export function useWebSocket({ url, enabled, reconnectMs = 3000, onMessage, onSt
       mountedRef.current = false;
     };
   }, []);
+
+  /** Suscribe un callback que recibe cada mensaje crudo del WS. Devuelve cleanup. */
+  function addExtraListener(cb) {
+    extraListenersRef.current.add(cb);
+    return () => extraListenersRef.current.delete(cb);
+  }
 
   useEffect(() => {
     if (!enabled || !url) {
@@ -36,6 +45,14 @@ export function useWebSocket({ url, enabled, reconnectMs = 3000, onMessage, onSt
 
         ws.onmessage = (event) => {
           onMessage?.(event.data, 'websocket');
+          // Reenviar a listeners secundarios (NotificationCenter, etc.).
+          extraListenersRef.current.forEach((cb) => {
+            try {
+              cb(event.data);
+            } catch (err) {
+              console.warn('[ws] extra listener error', err);
+            }
+          });
         };
 
         ws.onerror = () => {
@@ -83,5 +100,5 @@ export function useWebSocket({ url, enabled, reconnectMs = 3000, onMessage, onSt
     return false;
   };
 
-  return { ...status, send };
+  return { ...status, send, addExtraListener };
 }

@@ -25,9 +25,10 @@ acuaponia_firmware/
         ├── sensor_registry.h/.cpp     # Lista de sensores + armado del JSON
         ├── temperature_ds18b20.h/.cpp # Sonda sumergible DFRobot (1-Wire, GPIO 4) ← activo
         ├── ec_sensor.h/.cpp           # Electroconductividad (GPIO 32) ← activo
-        ├── turbidity_sensor.h/.cpp    # Turbidez / NTU (GPIO 33) ← activo
-        ├── bme280_sensor.h/.cpp       # Ambiente I2C ← activo
-        ├── water_level_ultrasonic.*   # Nivel de agua ← activo
+        ├── bme280_sensor.h/.cpp       # Ambiente I2C (SDA=21, SCL=22) ← activo
+        ├── arduino_slave.h/.cpp       # Esclavo Arduino por Serial2 (RX=16, TX=17) ← activo
+        ├── turbidity_sensor.h/.cpp    # Turbidez analógica legacy (NO_USADO)
+        ├── water_level_ultrasonic.*   # Nivel ultrasónico legacy (NO_USADO)
         └── temperature_ntc.h/.cpp     # Termistor NTC analógico (alternativa)
 ```
 
@@ -89,8 +90,39 @@ En Serial (115200) deberías ver, en orden:
 Si aparece `MQTT=10.…:1883 (TLS no)` sin migración, actualiza por SoftAP.
 Si `[NTP] Sin hora válida`, la red no llega a Internet (hotspot / DNS).
 Si `Falló (rc=…)`, revisa usuario/clave o CA.
-Si `Sin lecturas válidas · publicando heartbeat`, MQTT funciona pero los
-sensores no están midiendo.
+
+## Diagnóstico cuando un sensor no aparece en el dashboard
+
+El firmware publica **siempre** una línea de telemetría en
+`aquaponic/sensors/telemetry`, aunque todos los sensores estén caídos.
+En ese caso el payload trae cada sensor con `value: null` y
+`status: "unavailable"`, y el dashboard los muestra como **"No disponible"**
+(en vez de ocultarlos). Esto permite distinguir:
+
+| Caso | Síntoma | Dónde mirar |
+| --- | --- | --- |
+| Sensor físico mal conectado | Log `[DS18B20] Lectura inválida (-127.00°C)` | Pull-up 4.7 kΩ entre DATA (GPIO4) y 3.3 V |
+| Sensor analógico saturado | Log `[EC] Lectura inválida (ADC=4095)` | Sonda fuera del agua, AO > Vref o pin equivocado |
+| BME280 sin respuesta | Sin log `[BME280] Listo en I2C` | Dirección I2C 0x76/0x77, cableado SDA/SCL |
+| Esclavo UART caído | Sin log `[SLAVE] OK` | TX del esclavo → GPIO 16, GND común |
+| ESP32 sin publicar | `lastAt` viejo en backend (`/api/debug/last-mqtt`) | WiFi/MQTT, broker caído |
+
+### Endpoint de diagnóstico del backend
+
+`GET http://localhost:8080/api/debug/last-mqtt` devuelve:
+
+- `lastRawPayload`: el último mensaje MQTT recibido, completo.
+- `bySensor`: cada sensor conocido con su `value` y `lastAt`.
+
+Si un sensor tiene `value: null` y `lastAt: null` pese a que la ESP32 está
+publicando, **el firmware lo está omitiendo**. Lo que veas en el log serie
+de la ESP32 te dice exactamente qué falla:
+
+```
+[DS18B20] No se detecta la sonda: revisa el pull-up 4.7k y que el pin sea bidireccional.
+[BME280] No detectado — revisa cableado I2C y dirección 0x76/0x77
+[SLAVE] JSON inválido: ...
+```
 
 ## Termómetro sumergible DFRobot (DS18B20)
 
@@ -140,33 +172,38 @@ Sensor **I2C** para el **aire** (no sumergible). Publica tres parámetros:
 - Librerías Arduino: **Adafruit BME280 Library** + **Adafruit Unified Sensor**.
 - Diferencia con el DS18B20: el BME mide **aire**; el DS18B20 mide **agua**.
 
-## Nivel de agua (ultrasónico JSN-SR04T / HC-SR04)
+## Nivel de agua y turbidez (Arduino esclavo → ESP32 por UART)
 
-Mide la **altura de la columna de agua** (clave `nivelAgua`, en **cm**).
+La pecera lleva un **Arduino esclavo** que lee el sensor ultrasónico (nivel) y
+el sensor de turbidez, y los entrega a la ESP32 por **Serial2** como JSON por
+línea. La ESP32 los reenvía a MQTT bajo las claves `nivelAgua` (cm) y
+`turbiedad` (NTU).
 
-**Cableado:**
+**Contrato UART (Serial2, 9600 8N1):**
 
-| Pin sensor | ESP32 |
+| Pin ESP32 | Conexión |
 |---|---|
-| VCC | 5 V |
-| GND | GND |
-| Trig | GPIO 5 |
-| Echo | GPIO 18 |
+| GPIO 16 (RX) | TX del Arduino esclavo |
+| GPIO 17 (TX) | RX del Arduino esclavo (opcional, no se usa hoy) |
+| GND | GND del esclavo (**común obligatorio**) |
 
-> ⚠️ El pin **Echo** entrega 5 V. Si tu módulo no es de 3.3 V, usa un divisor
-> de voltaje (p. ej. 1 kΩ + 2 kΩ) hacia GPIO 18 para no dañar la ESP32.
+> ⚠️ No alimentar el Arduino desde el pin 3.3 V de la ESP32. Usa su propia
+> fuente y **compartí solo GND** entre ambas placas.
 
-**Geometría (en `config.h`):** el sensor mira hacia abajo, montado por encima
-del borde de la pecera:
+**Formato JSON esperado** (una trama por línea, terminada en `\n`):
 
-```c
-#define TANK_DEPTH_CM     32.0f   // profundidad de la pecera
-#define SENSOR_OFFSET_CM  7.0f    // altura del sensor sobre el borde
+```json
+{"nivelAgua":{"value":18.3,"unit":"cm"},"turbiedad":{"value":12.4,"unit":"NTU"}}
 ```
 
-El firmware calcula: `nivel = (7 + 32) − distancia_medida`, lo limita a
-`0…32 cm` y publica también el % de llenado. Si cambias la pecera o reubicas el
-sensor, ajusta solo esas dos constantes.
+Si el esclavo deja de enviar durante más de `SLAVE_TIMEOUT_MS` (8 s, definido
+en `config.h`), las dos lecturas se marcan como inválidas y el dashboard las
+muestra como "No disponible".
+
+**Liberación de pines:** GPIO 16 y 17 estaban asignados a los LEDs
+indicadores (`PIN_LED_AIREADOR` y `PIN_LED_DISPENSADOR`). Se reasignaron a
+**GPIO 13 y 14** para liberar el UART — verificar el cableado del panel de LEDs
+si ya estaba armado.
 
 > **Nota Arduino IDE:** solo se compilan los archivos de la raíz del sketch y
 > los de la carpeta `src/` (recursivamente). Por eso todo va bajo `src/`.
