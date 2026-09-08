@@ -25,6 +25,7 @@
 #include "src/actuators/actuator_relay.h"
 #include "src/actuators/buzzer.h"
 #include "src/actuators/led_indicators.h"
+#include "src/actuators/lcd_display.h"
 #include "src/config.h"
 #include "src/net/config_store.h"
 #include "src/net/wifi_manager.h"
@@ -75,6 +76,10 @@ void publishTelemetry() {
   Serial.printf("[MQTT] publish → %s · %uB · %s · válidos=%d inválidos=%d\n",
                 MQTT_TOPIC_TELEMETRY, (unsigned)n, ok ? "OK" : "FAIL",
                 validCount, invalidCount);
+  // Actualizamos el LCD con los últimos datos leídos
+  float temp = doc["sensors"]["temperatura"]["value"].as<float>();
+  int waterPct = doc["sensors"]["nivelAgua"]["percent"].as<int>();
+  lcd_update(wifi_connected(), mqtt_connected(), temp, waterPct);
 }
 
 void setup() {
@@ -88,6 +93,7 @@ void setup() {
   relay_begin();
   led_begin();
   buzzer_begin();
+  lcd_begin();
 
   config_store_begin();
   sensors_begin();
@@ -104,6 +110,7 @@ void loop() {
   led_loop();
   buzzer_loop();
   relay_loop();
+  lcd_update(wifi_connected(), mqtt_connected(), NAN, -1);
 
   if (millis() - lastPublishMs >= PUBLISH_INTERVAL_MS) {
     lastPublishMs = millis();
