@@ -20,7 +20,7 @@
 #include "temperature_ds18b20.h"     // sonda sumergible DFRobot (1-Wire, GPIO 4)
 #include "ec_sensor.h"               // electroconductividad DFRobot (analógico)
 #include "bme280_sensor.h"           // ambiente: T, HR, presión (I2C)
-#include "arduino_slave.h"           // nivelAgua vía Serial2 (GPIO 16/17)
+#include "water_level_resistors.h"   // nivelAgua vía resistencias (Pines 35, 34, 33)
 
 // 2) Lista de sensores activos — la ESP32 publica telemetría en MQTT.
 static SensorDef SENSORS[] = {
@@ -29,10 +29,9 @@ static SensorDef SENSORS[] = {
   { "temperaturaAmbiente", "°C",    bme280_begin,          bme280_temp_ambiente_read   },
   { "humedad",             "%",     nullptr,              bme280_humedad_read         },
   { "presion",             "hPa",   nullptr,              bme280_presion_read         },
-  { "nivelAgua",           "cm",    slave_begin,           slave_nivelAgua_read        },
+  { "nivelAgua",           "cm",    water_level_begin,     water_level_read            },
   // ── Alternativas / simulaciones (descomentar cuando corresponda) ──
   // { "temperatura", "°C", ntc_begin, ntc_read },
-  // { "temperatura", "°C", sim_begin,  sim_temp_read  },
   // { "ph",      "",     ph_begin,     ph_read     },
   // { "oxigeno", "mg/L", oxygen_begin, oxygen_read },
 };

@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import SensorGauge from '../components/SensorGauge';
 import DualCameraView from '../components/DualCameraView';
 import ActuatorPanel from '../components/ActuatorPanel';
-import SimulationPresets from '../components/SimulationPresets';
+
 import { Icon } from '../components/Icon';
 import { useAquaponic } from '../context/useAquaponic';
 import { getOrCreateClientId } from '../hooks/useAssistant';
@@ -90,7 +90,7 @@ export default function Dashboard({ navigate }) {
       </div>
 
       <div className="mt-8 max-w-4xl mx-auto" data-anim="btn">
-        <SimulationPresets />
+
       </div>
 
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8 justify-items-center">

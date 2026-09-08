@@ -17,7 +17,6 @@ import { GeminiService } from '../assistants/gemini.service';
 import { MailService } from '../alerts/mail.service';
 import { TelegramService } from '../alerts/telegram.service';
 import { evaluateRisk, extractReadings, SENSOR_THRESHOLDS } from '../alerts/thresholds';
-import { DemoTelemetryService } from '../aquaponic/demo-telemetry.service';
 import { MqttService } from '../mqtt/mqtt.service';
 import { NotificationService } from '../notifications/notification.service';
 import {
@@ -66,7 +65,6 @@ export class DecisionFlowService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly mqtt: MqttService,
-    private readonly demo: DemoTelemetryService,
     private readonly actuators: ActuatorService,
     private readonly notifications: NotificationService,
     private readonly mail: MailService,
@@ -95,10 +93,6 @@ export class DecisionFlowService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn('DecisionFlow deshabilitado (DECISION_FLOW_ENABLED=false)');
       return;
     }
-
-    this.demo.setOnRecoveryHook((sensorKey) => {
-      void this.onRecovery(sensorKey);
-    });
 
     this.subscription = this.mqtt.messages$.subscribe(({ payload }) => {
       this.processPayload(payload);
@@ -238,9 +232,6 @@ export class DecisionFlowService implements OnModuleInit, OnModuleDestroy {
           // Actualiza el valor actual; si el nivel cambia, reemplazamos el log.
           existing.value = value;
           if (existing.level !== level) existing.level = level;
-        } else if (this.demo.isNormalizing(key)) {
-          // Si ya estamos en modo normalización, no re-escalamos.
-          continue;
         } else if (this.escalations.size < this.maxParallel) {
           this.createEscalation(key, meta, value, level);
         } else {
@@ -367,10 +358,8 @@ export class DecisionFlowService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    // Disparar normalización del simulador (visualización y rampa).
-    const recovery = this.demo.triggerIaRecovery([esc.sensorKey]);
     this.logger.log(
-      `DecisionFlow[${esc.sensorKey}] → ${decisionSource}, normalización=${recovery.normalizing.join(',') || 'ninguna'}`,
+      `DecisionFlow[${esc.sensorKey}] → ${decisionSource}`,
     );
   }
 
@@ -531,7 +520,7 @@ export class DecisionFlowService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Llamado por el demo (o por WebSocket) cuando un sensor vuelve a rango
+   * Llamado cuando un sensor vuelve a rango
    * tras la normalización. Publica el reporte final.
    */
   async onRecovery(sensorKey: string): Promise<void> {

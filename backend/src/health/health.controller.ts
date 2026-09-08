@@ -24,9 +24,6 @@ export class HealthController {
     return {
       status: 'ok',
       mqtt: this.mqtt.getConnectionStatus(),
-      demo: {
-        enabled: this.config.get<boolean>('mqtt.demoEnabled', true),
-      },
     };
   }
 }
