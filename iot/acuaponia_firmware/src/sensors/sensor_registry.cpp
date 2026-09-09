@@ -25,7 +25,7 @@
 // 2) Lista de sensores activos — la ESP32 publica telemetría en MQTT.
 static SensorDef SENSORS[] = {
   { "temperatura",         "°C",    ds18b20_begin,         ds18b20_read                },
-  { "electroconductividad","mS/cm", ec_begin,              ec_read                     },
+  // { "electroconductividad","mS/cm", ec_begin,              ec_read                     }, // Desactivado por falta de pines en ESP8266
   { "temperaturaAmbiente", "°C",    bme280_begin,          bme280_temp_ambiente_read   },
   { "humedad",             "%",     nullptr,              bme280_humedad_read         },
   { "presion",             "hPa",   nullptr,              bme280_presion_read         },

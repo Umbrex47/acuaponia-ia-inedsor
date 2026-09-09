@@ -15,8 +15,8 @@
 #if defined(ESP8266)
 
 // ── Pines para ESP8266 (NodeMCU/ESP-12E) ──
-#define PIN_TEMP   16        // D0 (GPIO16) - DS18B20 (con pull-up 4.7k)
-#define PIN_EC     A0        // A0 - Solo hay 1 entrada analógica en ESP8266
+#define PIN_TEMP   2         // D4 (GPIO2) - DS18B20 (con pull-up 4.7k)
+#define PIN_EC     -1        // Desactivado según solicitud
 
 // Esclavo Arduino (desactivado)
 #define PIN_SLAVE_RX        -1
@@ -32,24 +32,26 @@
 #define SENSOR_OFFSET_CM    7.0f
 
 // Bus I2C (BME280 y LCD)
-#define PIN_I2C_SDA  4       // D2
-#define PIN_I2C_SCL  5       // D1
+#define PIN_I2C_SDA  0       // D3 (GPIO0)
+#define PIN_I2C_SCL  4       // D2 (GPIO4)
 
-// Relés
-#define PIN_RELAY_BOMBA_AGUA      14   // D5
-#define PIN_RELAY_AIREADOR        12   // D6
-#define PIN_RELAY_DISPENSADOR     13   // D7
+// Nivel de agua por resistencias
+#define PIN_LEVEL_LOW     12   // D6 (GPIO12)
+#define PIN_LEVEL_MID     13   // D7 (GPIO13)
+#define PIN_LEVEL_HIGH    15   // D8 (GPIO15) - ATENCIÓN: Boot failure si tiene pull-up
+
+// Relés (Asignando pines libres)
+#define PIN_RELAY_BOMBA_AGUA      14   // D5 (GPIO14)
+#define PIN_RELAY_AIREADOR        16   // D0 (GPIO16)
+#define PIN_RELAY_DISPENSADOR     1    // TX (GPIO1) - Opcional
 
 // LEDs indicadores
 // (Liberados por falta de pines en ESP8266, pero definidos por compatibilidad)
 #define PIN_LED_AIREADOR    -1
 #define PIN_LED_DISPENSADOR -1
 
-// Nivel de agua por resistencias
-#define PIN_LEVEL_LOW     0    // D3
-#define PIN_LEVEL_MID     2    // D4
-#define PIN_LEVEL_HIGH    3    // RX
-#define PIN_BUZZER              15     // D8 (Pull-down interno)
+// Buzzer
+#define PIN_BUZZER              3      // RX (GPIO3)
 #define BUZZER_PASSIVE          1
 #define BUZZER_FREQ_HZ          2000
 #define BUZZER_COUNTDOWN_MS     20000
