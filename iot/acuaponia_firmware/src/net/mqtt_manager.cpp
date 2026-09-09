@@ -9,7 +9,11 @@
 #include "../../arduino_secrets.h"
 
 #include <PubSubClient.h>
+#if defined(ESP8266)
+#include <ESP8266WiFi.h>
+#else
 #include <WiFi.h>
+#endif
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <time.h>
@@ -59,8 +63,15 @@ void mqtt_begin() {
   const DeviceConfig& cfg = config_get();
 
   if (cfg.mqttTls) {
+#if defined(ESP8266)
+    // ESP8266 usa BearSSL y requiere X509List para validar el root CA
+    static BearSSL::X509List cert(MQTT_ROOT_CA);
+    tlsClient.setTrustAnchors(&cert);
+    tlsClient.setTimeout(MQTT_TLS_TIMEOUT_S * 1000); // BearSSL usa milisegundos en timeout
+#else
     tlsClient.setCACert(MQTT_ROOT_CA);
     tlsClient.setTimeout(MQTT_TLS_TIMEOUT_S);
+#endif
     client.setClient(tlsClient);
   } else {
     client.setClient(plainClient);
