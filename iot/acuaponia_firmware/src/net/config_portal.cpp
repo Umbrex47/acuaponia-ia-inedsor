@@ -444,7 +444,11 @@ static void handleScan() {
     JsonObject o = arr.createNestedObject();
     o["ssid"] = WiFi.SSID(i);
     o["rssi"] = WiFi.RSSI(i);
+#if defined(ESP8266)
+    o["open"] = (WiFi.encryptionType(i) == ENC_TYPE_NONE);
+#else
     o["open"] = (WiFi.encryptionType(i) == WIFI_AUTH_OPEN);
+#endif
   }
   WiFi.scanDelete();
   String out;

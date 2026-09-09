@@ -58,7 +58,11 @@ static const char* staStatusName(wl_status_t status) {
  */
 static uint8_t scanChannelFor(const char* ssid) {
   // Scan filtrado por SSID: mucho más rápido que enumerar todas las redes.
+#if defined(ESP8266)
+  int16_t found = WiFi.scanNetworks(false, true, 0, (uint8_t*)ssid);
+#else
   int16_t found = WiFi.scanNetworks(false, true, false, 300, 0, ssid);
+#endif
   if (found <= 0) {
     Serial.printf("[WiFi] '%s' no visible en el scan\n", ssid);
     WiFi.scanDelete();
