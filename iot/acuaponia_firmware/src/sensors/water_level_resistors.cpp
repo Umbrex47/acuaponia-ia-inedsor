@@ -1,9 +1,6 @@
 #include "water_level_resistors.h"
+#include "../config.h"
 #include <Arduino.h>
-
-#define PIN_LEVEL_LOW  35
-#define PIN_LEVEL_MID  34
-#define PIN_LEVEL_HIGH 33
 
 static const float LEVEL_MAX_CM = 32.0f;
 
@@ -11,7 +8,7 @@ void water_level_begin() {
   pinMode(PIN_LEVEL_LOW, INPUT);
   pinMode(PIN_LEVEL_MID, INPUT);
   pinMode(PIN_LEVEL_HIGH, INPUT);
-  Serial.println("[WATER LEVEL] Pines 35, 34, 33 configurados (resistencias)");
+  Serial.printf("[WATER LEVEL] Pines %d, %d, %d configurados (resistencias)\n", PIN_LEVEL_LOW, PIN_LEVEL_MID, PIN_LEVEL_HIGH);
 }
 
 Reading water_level_read() {

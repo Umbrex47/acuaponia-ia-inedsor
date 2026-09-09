@@ -6,9 +6,15 @@
 
 #include <ArduinoJson.h>
 #include <DNSServer.h>
+#if defined(ESP8266)
+#include <ESP8266WebServer.h>
+#include <ESP8266WiFi.h>
+using WebServer = ESP8266WebServer;
+#else
 #include <WebServer.h>
 #include <WiFi.h>
 #include <esp_sleep.h>
+#endif
 
 static WebServer server(AP_HTTP_PORT);
 static DNSServer dnsServer;
@@ -507,7 +513,11 @@ void config_portal_loop() {
     if (sleepPending) {
       Serial.println("[Portal] Deep sleep · despierta con EN/RESET");
       delay(100);
+#if defined(ESP8266)
+      ESP.deepSleep(0);
+#else
       esp_deep_sleep_start();
+#endif
     }
     Serial.println("[Portal] Reiniciando…");
     delay(100);
