@@ -9,7 +9,7 @@ const KEYS = {
 };
 
 export const DEFAULT_API_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+  process.env.EXPO_PUBLIC_API_URL || 'https://acuaponia-ia-inedsor.onrender.com';
 
 export const storage = {
   // Operador

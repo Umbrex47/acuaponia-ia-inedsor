@@ -53,7 +53,9 @@ class NotificationsManager {
     this.isConnecting = true;
     try {
       const baseUrl = await storage.getApiBaseUrl();
-      const wsUrl = baseUrl.replace(/^http/, 'ws') + '/ws';
+      const wsUrl =
+        baseUrl.replace(/^https:\/\//i, 'wss://').replace(/^http:\/\//i, 'ws://') +
+        '/ws';
 
       if (this.socket) {
         try {
