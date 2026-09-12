@@ -1,0 +1,10 @@
+# Dependencias mínimas y ultraligeras (Modo A y API sin GPU)
+numpy>=1.24.0
+opencv-python-headless>=4.8.0
+pyyaml>=6.0
+pydantic>=2.0.0
+fastapi>=0.100.0
+uvicorn>=0.22.0
+
+# Opcional para Modo B (YOLO-nano y tracking dinámico):
+# ultralytics>=8.0.0

@@ -6,6 +6,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { AquaponicModule } from '../aquaponic/aquaponic.module';
 import { AssistantsModule } from '../assistants/assistants.module';
 import { DecisionController } from './decision.controller';
+import { FishController } from './fish.controller';
 import { AeratorDecisionService } from './aerator-decision.service';
 import { DecisionFlowService } from './decision-flow.service';
 import { EarlyWarningReportService } from './early-warning-report.service';
@@ -48,7 +49,7 @@ import {
         ]
       : []),
   ],
-  controllers: [DecisionController],
+  controllers: [DecisionController, FishController],
   providers: [
     PumpDecisionService,
     AeratorDecisionService,

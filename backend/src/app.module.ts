@@ -16,10 +16,13 @@ import { EmergencyModule } from './emergency/emergency.module';
 import { FeederModule } from './feeders/feeders.module';
 import { AssistantsModule } from './assistants/assistants.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AdminModule } from './admin/admin.module';
 import { DebugModule } from './debug/debug.module';
+import { DeduplicationModule } from './deduplication/deduplication.module';
 
 @Module({
   imports: [
+    DeduplicationModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
@@ -35,6 +38,7 @@ import { DebugModule } from './debug/debug.module';
     FeederModule.forRoot(),
     AssistantsModule.forRoot(),
     NotificationsModule,
+    AdminModule,
     DebugModule,
   ],
   controllers: [HealthController],

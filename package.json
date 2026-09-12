@@ -8,10 +8,11 @@
     "dev:all": "concurrently -n backend,frontend,camera -c blue,green,magenta \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:camera\"",
     "dev:backend": "npm --prefix backend run start:dev",
     "dev:frontend": "npm --prefix frontend run dev",
+    "dev:mobile": "npm --prefix mobile start",
     "dev:camera": "python camera-publisher/camera_publisher.py",
     "simulate": "npm --prefix backend run simulate --",
     "build": "npm --prefix backend run build && npm --prefix frontend run build",
-    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install"
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install && npm --prefix mobile install"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

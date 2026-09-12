@@ -20,18 +20,34 @@ interface PlantAssessment {
   suggestedActions?: Array<{ action?: string; reason?: string }>;
 }
 
+export interface IndividualPlantTelemetry {
+  plant_id?: string;
+  name?: string;
+  status?: string;
+  status_label?: string;
+  area_cm2?: number;
+  green_coverage_pct?: number;
+  growth_rate_pct_per_day?: number;
+  leaf_count?: number;
+  health_score?: number;
+  anomaly_score?: number;
+  factors?: string[];
+  recommendations?: Array<{ action?: string; reason?: string; severity?: string }>;
+}
+
 export interface PlantTelemetry {
   count?: number;
   status?: string;
   healthMethod?: string;
   avgHealthScore?: number;
   findings?: Array<{
-    id?: number;
+    id?: number | string;
     label?: string;
     confidence?: number;
     bbox?: number[];
   }>;
   assessment?: PlantAssessment;
+  individual?: IndividualPlantTelemetry[];
 }
 
 @Injectable()

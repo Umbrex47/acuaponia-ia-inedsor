@@ -41,7 +41,31 @@ export const SENSOR_THRESHOLDS: Record<string, SensorThreshold> = {
     label: 'Nitratos',
     unit: 'ppm',
     optimal: { min: 5, max: 40 },
-    aliases: ['nitratos', 'nitrates', 'no3'],
+    aliases: ['nitratos', 'nitrates', 'no3', 'NO3'],
+  },
+  nitritos: {
+    label: 'Nitritos',
+    unit: 'ppm',
+    optimal: { min: 0, max: 0.5 },
+    aliases: ['nitritos', 'nitrites', 'no2', 'NO2'],
+  },
+  amonio: {
+    label: 'Amonio / Amoníaco',
+    unit: 'ppm',
+    optimal: { min: 0, max: 0.5 },
+    aliases: ['amonio', 'amoniaco', 'ammonia', 'ammonium', 'nh3', 'nh4', 'NH3', 'NH4'],
+  },
+  fosfatos: {
+    label: 'Fosfatos',
+    unit: 'ppm',
+    optimal: { min: 1, max: 5 },
+    aliases: ['fosfatos', 'phosphates', 'po4', 'PO4'],
+  },
+  alcalinidad: {
+    label: 'Alcalinidad',
+    unit: 'mg/L',
+    optimal: { min: 50, max: 150 },
+    aliases: ['alcalinidad', 'alkalinity', 'kh', 'KH'],
   },
   co2: {
     label: 'CO₂',

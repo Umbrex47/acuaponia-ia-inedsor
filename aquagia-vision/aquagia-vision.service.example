@@ -1,0 +1,19 @@
+[Unit]
+Description=AquaGia Vision - Monitoreo Individual de Plantas Edge-First
+After=network.target mosquitto.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/aquaponics-system/aquagia-vision
+Environment="PYTHONPATH=/home/pi/aquaponics-system/aquagia-vision"
+ExecStart=/home/pi/aquaponics-system/aquagia-vision/.venv/bin/python cli.py daemon --port 8000
+Restart=always
+RestartSec=10
+# Límites de recursos recomendados para edge Linux
+MemoryHigh=250M
+MemoryMax=350M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

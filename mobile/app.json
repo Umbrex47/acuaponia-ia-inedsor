@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "AquaGia Mobile",
+    "slug": "aquaponic-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.inedsor.aquaponic"
+    },
+    "android": {
+      "package": "com.inedsor.aquaponic"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#0284C7"
+        }
+      ],
+      "expo-status-bar"
+    ]
+  }
+}
