@@ -1,0 +1,136 @@
+# Stack de simulación para Aquaponic OS en Dokploy (laptop + Tailscale).
+#
+# Variante de docker-compose.yml pensada para un despliegue self-hosted en una
+# laptop con Linux ligero + Tailscale + Dokploy. Publica los puertos en el host
+# para que sean alcanzables por el nombre mágico de Tailscale (magic DNS), sin
+# depender de la configuración de proxy de Dokploy.
+#
+# La simulación usa el demo del backend (MQTT_DEMO_ENABLED=true): el backend
+# publica telemetría falsa cada 5 s a Mosquitto y el dashboard la muestra vía
+# WebSocket, sin ESP32 ni broker externo.
+#
+# Uso:
+#   1. Definí HOST_FQDN con el nombre de Tailscale de la laptop
+#      (p. ej. laptop.acuaponia.ts.net). Si lo corrés en la propia laptop,
+#      dejalo en localhost.
+#   2. En Dokploy: New Project → Docker Compose → apuntá a este archivo
+#      (docker-compose.dokploy.yml) y definí la variable HOST_FQDN.
+#   3. Desplegá. Abrí http://<HOST_FQDN>:3000 en el navegador.
+#
+# Si preferís enrutar por el proxy de Dokploy (dominios), quitá la sección
+# `ports` de backend/frontend y asigná dominios en la UI; en ese caso las URLs
+# del dashboard (APP_API_URL/APP_WS_URL) deben apuntar a esos dominios.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [aquaponia]
+
+  mosquitto:
+    build:
+      context: ./mosquitto
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -t healthcheck -m ping || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks: [aquaponia]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+    ports:
+      # Alcanzable por Tailscale: http://<HOST_FQDN>:8080
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      PORT: 8080
+      MQTT_URL: mqtt://mosquitto:1883
+      MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:-aquaponic-backend}
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      MQTT_RECONNECT_MS: ${MQTT_RECONNECT_MS:-3000}
+      MQTT_TOPIC_PREFIX: ${MQTT_TOPIC_PREFIX:-aquaponic}
+      # Simulación activa: telemetría falsa sin ESP32.
+      MQTT_DEMO_ENABLED: ${MQTT_DEMO_ENABLED:-true}
+      MQTT_DEMO_INTERVAL_MS: ${MQTT_DEMO_INTERVAL_MS:-5000}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-aquaponic}
+      READINGS_PERSIST_ENABLED: ${READINGS_PERSIST_ENABLED:-true}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_SECURE: ${MAIL_SECURE:-false}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: "${MAIL_FROM:-Aquaponic OS <no-reply@aquaponic.local>}"
+      MAIL_TO: ${MAIL_TO:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_IDS: ${TELEGRAM_CHAT_IDS:-}
+      ALERTS_ENABLED: ${ALERTS_ENABLED:-true}
+      ALERTS_COOLDOWN_MS: ${ALERTS_COOLDOWN_MS:-300000}
+      DECISION_ENABLED: ${DECISION_ENABLED:-true}
+      PUMP_ACTUATOR_ID: ${PUMP_ACTUATOR_ID:-bomba_agua}
+      PUMP_ON_LEVEL: ${PUMP_ON_LEVEL:-24}
+      PUMP_OFF_LEVEL: ${PUMP_OFF_LEVEL:-20}
+      PUMP_MIN_STATE_MS: ${PUMP_MIN_STATE_MS:-60000}
+      REPORT_ENABLED: ${REPORT_ENABLED:-true}
+      REPORT_CRON: "${REPORT_CRON:-0 8 * * *}"
+      REPORT_WINDOW_HOURS: ${REPORT_WINDOW_HOURS:-24}
+    networks: [aquaponia]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Alcanzable por Tailscale: http://<HOST_FQDN>:3000
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      # HOST_FQDN = nombre mágico de Tailscale de la laptop (p. ej.
+      # laptop.acuaponia.ts.net). En localhost funciona para abrir en la misma
+      # máquina. El navegador usa estas URLs para hablar con el backend.
+      APP_API_URL: ${APP_API_URL:-http://${HOST_FQDN:-localhost}:8080}
+      APP_WS_URL: ${APP_WS_URL:-ws://${HOST_FQDN:-localhost}:8080/ws}
+      APP_WS_ENABLED: ${APP_WS_ENABLED:-true}
+      APP_MQTT_URL: ${APP_MQTT_URL:-}
+      APP_MQTT_ENABLED: ${APP_MQTT_ENABLED:-false}
+      APP_MQTT_USERNAME: ${APP_MQTT_USERNAME:-}
+      APP_MQTT_PASSWORD: ${APP_MQTT_PASSWORD:-}
+      APP_CAMERA_FISH_URL: ${APP_CAMERA_FISH_URL:-}
+      APP_CAMERA_PLANTS_URL: ${APP_CAMERA_PLANTS_URL:-}
+      # Modal de demostración al cargar el dashboard.
+      APP_DEMO_MODE: ${APP_DEMO_MODE:-true}
+    networks: [aquaponia]
+
+volumes:
+  mongo_data:
+  mosquitto_data:
+  mosquitto_log:
+
+networks:
+  aquaponia:
+    driver: bridge

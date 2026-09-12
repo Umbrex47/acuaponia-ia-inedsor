@@ -1,0 +1,62 @@
+# AquaGia Vision - Configuración por defecto
+
+system:
+  name: "AquaGia Vision"
+  version: "1.0.0"
+  mode: "fixed" # "fixed" (Modo A: ROIs fijas) o "yolo" (Modo B: detección dinámica)
+  bed_id: "cama_01"
+
+camera:
+  source: 0 # Índice de webcam (0), URL RTSP ("rtsp://..."), o "synthetic"
+  width: 1280
+  height: 720
+  px_to_cm2: 0.015 # Calibración estándar (1 px ≈ 0.015 cm² a distancia estándar)
+
+scheduler:
+  day_interval_sec: 30 # Captura cada 30 segundos durante el día
+  night_interval_sec: 300 # Captura cada 5 minutos durante la noche
+  day_start_hour: 6
+  night_start_hour: 20
+  change_detection_enabled: true
+  change_threshold_pct: 3.0 # Si el cambio en la escena supera 3%, procesar inmediatamente
+
+grid: # Configuración de Modo A (Posiciones fijas)
+  rows: 3
+  cols: 3
+  prefix: "P" # P01, P02, ... P09
+  margin_x_ratio: 0.04
+  margin_y_ratio: 0.04
+  custom_rois_file: "config/default_rois.json"
+
+segmentation:
+  exg_threshold: null # null = Otsu automático sobre 2G - R - B
+  min_area_px: 300
+  morph_kernel_size: 5
+  morph_iterations: 2
+
+analysis:
+  chlorosis_hue_min: 20
+  chlorosis_hue_max: 35
+  necrosis_brown_threshold: 0.12
+  healthy_green_ratio_threshold: 0.65
+
+yolo: # Solo activo en Modo B
+  model_path: "models/yolov8n_plants.pt"
+  conf_threshold: 0.35
+  iou_threshold: 0.45
+  tracker_max_disappeared: 10
+
+database:
+  db_path: "data/aquagia_vision.db"
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["*"]
+
+mqtt:
+  enabled: false
+  host: "localhost"
+  port: 1883
+  topic_telemetry: "aquaponic/plants/telemetry"
+  topic_individual: "aquaponic/plants/individual"

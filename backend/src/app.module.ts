@@ -11,9 +11,18 @@ import { AquaponicModule } from './aquaponic/aquaponic.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { ReadingsModule } from './readings/readings.module';
 import { DecisionModule } from './decision/decision.module';
+import { ActuatorsModule } from './actuators/actuators.module';
+import { EmergencyModule } from './emergency/emergency.module';
+import { FeederModule } from './feeders/feeders.module';
+import { AssistantsModule } from './assistants/assistants.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { AdminModule } from './admin/admin.module';
+import { DebugModule } from './debug/debug.module';
+import { DeduplicationModule } from './deduplication/deduplication.module';
 
 @Module({
   imports: [
+    DeduplicationModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
@@ -24,6 +33,13 @@ import { DecisionModule } from './decision/decision.module';
     AlertsModule,
     ReadingsModule.forRoot(),
     DecisionModule,
+    ActuatorsModule.forRoot(),
+    EmergencyModule,
+    FeederModule.forRoot(),
+    AssistantsModule.forRoot(),
+    NotificationsModule,
+    AdminModule,
+    DebugModule,
   ],
   controllers: [HealthController],
 })

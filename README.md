@@ -6,9 +6,14 @@ Monorepo del sistema acuapónico: **dashboard React** y **backend NestJS** con M
 
 ```
 .
-├── frontend/          # Vite + React + Tailwind + GSAP (dashboard)
-├── backend/           # NestJS + MQTT + WebSocket
-├── iot/               # Firmware ESP32 (Arduino)
+├── frontend/          # Vite + React + Tailwind + GSAP (dashboard web)
+├── backend/           # NestJS + MQTT + WebSocket + Persistencia MongoDB
+├── mobile/            # React Native / Expo (App móvil: muestreo manual, peces, alertas)
+├── iot/               # Firmware ESP32 / ESP8266 (Arduino)
+├── camera-publisher/  # Streaming de video e inferencia IA de visión
+├── fish-detection/    # Modelos YOLO + SORT para telemetría de peces
+├── plant-detection/   # Modelos de visión para salud vegetal
+├── docs/              # Documentación técnica, planes e informes
 ├── .gitignore
 └── README.md          # Este archivo
 ```

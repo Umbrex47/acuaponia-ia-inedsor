@@ -171,7 +171,9 @@ export class PumpDecisionService implements OnModuleInit {
       level: this.lastLevel,
       timestamp: new Date().toISOString(),
     };
-    this.mqtt.publish(this.commandTopic, command, true);
+    // Evento puntual: no se retiene para evitar que la ESP32 repita el
+    // comando cada vez que se reconecta al broker.
+    this.mqtt.publish(this.commandTopic, command, false);
 
     this.logger.log(
       `Bomba ${on ? 'ENCENDIDA' : 'APAGADA'} — ${reason} (nivel: ${this.lastLevel ?? 'N/D'} cm)`,

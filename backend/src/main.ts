@@ -16,6 +16,7 @@ async function bootstrap() {
   await app.listen(port);
   Logger.log(`HTTP + WebSocket en http://localhost:${port}`, 'Bootstrap');
   Logger.log(`WebSocket del dashboard: ws://localhost:${port}/ws`, 'Bootstrap');
+  Logger.log(`WebSocket del asistente: ws://localhost:${port}/chat`, 'Bootstrap');
 }
 
 bootstrap();

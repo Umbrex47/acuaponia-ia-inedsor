@@ -3,6 +3,8 @@ node_modules
 dist
 dist-ssr
 .vite
+.expo/
+web-build/
 *.local
 .env
 .env.*
@@ -37,8 +39,15 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Documentos (binarios, no son código)
+*.docx
+*.doc
+
 # Archivos locales
 *.rar
+*.db
+*.sqlite
+*.sqlite3
 
 # Detección de peces (datasets / pesos / runs)
 fish-detection/datasets/

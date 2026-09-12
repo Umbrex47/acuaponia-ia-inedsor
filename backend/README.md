@@ -23,7 +23,35 @@ Variables principales en `.env`:
 | `PORT` | HTTP + WebSocket (default `8080`) |
 | `MQTT_URL` | URL del broker (`mqtt://localhost:1883`) |
 | `MQTT_TOPIC_PREFIX` | Prefijo de topics (`aquaponic`) |
-| `MQTT_DEMO_ENABLED` | `true` para publicar datos de prueba |
+| `MQTT_DEMO_ENABLED` | `false` para datos reales; `true` solo en demos sin hardware |
+
+## Datos reales vs simulación
+
+El backend siempre **escucha** el broker MQTT y reenvía cada mensaje al
+dashboard por WebSocket (`ws://host:8080/ws`). Con la ESP32 publicando en
+`aquaponic/sensors/telemetry` y el simulador apagado, el dashboard refleja
+**únicamente** las lecturas reales.
+
+| Modo | `MQTT_DEMO_ENABLED` | Comportamiento |
+| ---- | ------------------- | -------------- |
+| Datos reales (recomendado) | `false` | Solo se reenvía al WS lo que llega por MQTT. |
+| Demo / sin hardware | `true` | El `DemoTelemetryService` publica telemetría suavizada cada `MQTT_DEMO_INTERVAL_MS`. **Apagalo** en cuanto la ESP32 esté en línea para no duplicar datos. |
+
+Variables de frontend que tienen que coincidir:
+
+- `VITE_DEMO_MODE=false` — oculta el modal "Modo demostración".
+- `VITE_MQTT_ENABLED=false` — evita suscribir el navegador directo al broker; el WS del backend ya reenvía todo.
+
+Cambio típico cuando llega la ESP32:
+
+```env
+MQTT_DEMO_ENABLED=false
+```
+
+```env
+VITE_DEMO_MODE=false
+VITE_MQTT_ENABLED=false
+```
 
 ## Comandos
 
@@ -70,6 +98,20 @@ El dashboard normaliza estos campos en `frontend/src/data/normalizer.js`.
 | `GET` | `/health` | Salud + estado MQTT |
 | `GET` | `/api/mqtt/status` | Estado de conexión MQTT |
 | `POST` | `/api/mqtt/publish` | Publicar en un topic |
+| `GET` | `/actuators` | Lista de actuadores (bomba / aireador / dispensador) |
+| `POST` | `/actuators/:id/execute` | Acción manual (on/off/dispense) |
+| `POST` | `/actuators/:id/mode` | Cambia modo (`ia` / `manual` / `auto`) |
+| `POST` | `/actuators/:id/lock` | Lock multi-usuario (10 s) |
+| `POST` | `/actuators/:id/unlock` | Libera lock |
+| `GET` | `/feeder/schedule` | Configuración del dispensador |
+| `POST` | `/feeder/schedule` | Reprograma horarios |
+| `POST` | `/feeder/dispense` | Disparo manual del dispensador |
+| `POST` | `/assistant/chat` | Chat HTTP (fallback) |
+| `GET` | `/assistant/history` | Historial de chat |
+| `GET` | `/assistant/proposals` | Propuestas pendientes de la IA |
+| `POST` | `/assistant/proposals/resolve` | Aprobar/Rechazar propuesta |
+| `WS` | `/ws` | Telemetría en vivo (dashboard) |
+| `WS` | `/chat` | Chat streaming con la IA |
 
 Ejemplo de publicación manual:
 
@@ -84,7 +126,13 @@ curl -X POST http://localhost:8080/api/mqtt/publish `
 ```
 ESP32 ──publish──► Broker MQTT ◄──subscribe── Backend (NestJS)
                                               │
-                                              └── WebSocket /ws ──► Dashboard React
+                                              ├── EmergencyPolicy (auto-actúa)
+                                              ├── ActuatorService (bomba/aireador/dispensador)
+                                              ├── FeederScheduler (cron configurable)
+                                              ├── AssistantService ── Ollama (Llama 3.1 8B)
+                                              │
+                                              ├── WebSocket /ws ──► Dashboard (telemetría)
+                                              └── WebSocket /chat ──► Asistente IA
 ```
 
 El frontend puede usar **WebSocket** (vía este backend) o **MQTT directo** (WebSocket del broker en `:9001`).
@@ -99,13 +147,21 @@ backend/
 │   ├── config/configuration.ts
 │   ├── health/health.controller.ts
 │   ├── mqtt/
-│   │   ├── mqtt.service.ts      # Cliente MQTT
-│   │   ├── mqtt.controller.ts   # API publish/status
-│   │   ├── mqtt-demo.service.ts # Simulador (dev)
+│   │   ├── mqtt.service.ts
+│   │   ├── mqtt.controller.ts
+│   │   ├── mqtt-demo.service.ts
 │   │   └── topics.constants.ts
-│   └── aquaponic/
-│       ├── aquaponic.gateway.ts # WebSocket /ws
-│       └── aquaponic.service.ts # Puente MQTT → WS
+│   ├── aquaponic/         # Gateway WebSocket /ws
+│   ├── alerts/            # Umbrales, mail, telegram
+│   ├── readings/          # Persistencia en Mongo
+│   ├── decision/          # Motor de bomba, reportes, assessments
+│   ├── actuators/         # NUEVO: bomba + aireador + dispensador
+│   ├── emergency/         # NUEVO: política de auto-acción
+│   ├── feeders/           # NUEVO: cron del dispensador
+│   ├── assistants/        # NUEVO: Ollama Llama 3.1 + chat
+│   └── security/          # NUEVO: API key guard
 ├── .env.example
 └── package.json
 ```
+
+> Documentación detallada de actuadores en [`docs/actuators.md`](../docs/actuators.md) y del asistente en [`docs/assistant-plan.md`](../docs/assistant-plan.md).

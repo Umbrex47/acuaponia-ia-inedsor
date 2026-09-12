@@ -1,7 +1,8 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Subscription } from 'rxjs';
 import { MqttService } from '../mqtt/mqtt.service';
+import { NotificationService } from '../notifications/notification.service';
 import { MailService } from './mail.service';
 import { TelegramService } from './telegram.service';
 import {
@@ -30,6 +31,8 @@ export class AlertService implements OnModuleInit {
     private readonly mqtt: MqttService,
     private readonly mail: MailService,
     private readonly telegram: TelegramService,
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notifications: NotificationService,
     private readonly config: ConfigService,
   ) {}
 
@@ -117,7 +120,17 @@ export class AlertService implements OnModuleInit {
         );
       }
     } else if (changed && level === 'stable') {
-      this.logger.log(`${SENSOR_THRESHOLDS[key].label} volvió a estable`);
+      const meta = SENSOR_THRESHOLDS[key];
+      this.logger.log(`${meta.label} volvió a estable`);
+      void this.notifications.emit({
+        category: 'sensor-recovered',
+        severity: 'success',
+        title: `${meta.label} volvió a estable`,
+        message: `Lectura actual: ${value}${meta.unit ? ' ' + meta.unit : ''}`,
+        dedupeKey: `sensor:${key}:recovered`,
+        source,
+        meta: { sensor: key, value },
+      });
     }
 
     this.state.set(key, { level, value, lastAlertAt });
@@ -195,5 +208,24 @@ export class AlertService implements OnModuleInit {
       this.mail.send({ subject, text, html }),
       this.telegram.send({ text: telegramText }),
     ]);
+
+    // Notificación central (WebSocket en tiempo real + email + telegram según
+    // NOTIFICATIONS_CHANNELS). El envío anterior garantiza el contrato histórico;
+    // este emit agrega el canal WS para que la UI reaccione sin polling.
+    void this.notifications.emit({
+      category: 'sensor-alert',
+      severity: level === 'high' ? 'critical' : 'warn',
+      title: `${riskLabel}: ${meta.label} fuera de rango`,
+      message: `Lectura ${value}${unit} (${direction} del rango óptimo ${meta.optimal.min}–${meta.optimal.max}${unit})`,
+      dedupeKey: `sensor:${key}:${level}`,
+      source,
+      meta: {
+        sensor: key,
+        value,
+        unit: meta.unit ?? null,
+        level,
+        optimal: meta.optimal,
+      },
+    });
   }
 }

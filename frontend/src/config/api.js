@@ -75,6 +75,14 @@ export const apiConfig = {
     reconnectMs: 3000,
     maxRetries: Infinity,
   },
+  assistant: {
+    enabled: flag('assistantEnabled', 'VITE_ASSISTANT_ENABLED', true),
+    url: normalizeAssistantUrl(
+      pick('assistantUrl', 'VITE_ASSISTANT_URL', '') ||
+        pick('chatUrl', 'VITE_CHAT_URL', ''),
+    ),
+    apiKey: pick('assistantApiKey', 'VITE_ASSISTANT_API_KEY', ''),
+  },
   mqtt: {
     enabled: flag('mqttEnabled', 'VITE_MQTT_ENABLED', true),
     url: pick('mqttUrl', 'VITE_MQTT_URL', 'ws://localhost:9001'),
@@ -96,5 +104,13 @@ export const apiConfig = {
     plants: pick('cameraPlantsUrl', 'VITE_CAMERA_PLANTS_URL', ''),
   },
 };
+
+function normalizeAssistantUrl(raw) {
+  if (!raw || typeof raw !== 'string') {
+    const apiBase = pick('apiUrl', 'VITE_API_URL', 'http://localhost:8080');
+    return normalizeWsUrl(apiBase.replace(/^http/, 'ws') + '/chat');
+  }
+  return normalizeWsUrl(raw);
+}
 
 export const MQTT_TOPICS = Object.values(apiConfig.mqtt.topics);

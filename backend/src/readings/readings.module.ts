@@ -1,13 +1,18 @@
-import { DynamicModule, Logger, Module } from '@nestjs/common';
+import { DynamicModule, Logger, Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MqttModule } from '../mqtt/mqtt.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ReadingsController } from './readings.controller';
 import { ReadingsService } from './readings.service';
 import {
   SensorReading,
   SensorReadingSchema,
 } from './schemas/sensor-reading.schema';
+import {
+  ManualReading,
+  ManualReadingSchema,
+} from './schemas/manual-reading.schema';
 
 @Module({})
 export class ReadingsModule {
@@ -17,7 +22,10 @@ export class ReadingsModule {
    */
   static forRoot(): DynamicModule {
     const uri = process.env.MONGODB_URI;
-    const imports: NonNullable<DynamicModule['imports']> = [MqttModule];
+    const imports: NonNullable<DynamicModule['imports']> = [
+      MqttModule,
+      forwardRef(() => NotificationsModule),
+    ];
 
     if (uri) {
       imports.push(
@@ -30,19 +38,17 @@ export class ReadingsModule {
         }),
         MongooseModule.forFeature([
           { name: SensorReading.name, schema: SensorReadingSchema },
+          { name: ManualReading.name, schema: ManualReadingSchema },
         ]),
       );
     } else {
       new Logger(ReadingsModule.name).warn(
-        'MONGODB_URI no definido — el módulo de registro arranca sin conexión',
+        'MONGODB_URI no definido — el módulo de registro arranca sin conexión a BD',
       );
     }
 
     return {
       module: ReadingsModule,
-      // Global para que otros módulos (p. ej. decision) puedan inyectar
-      // ReadingsService sin re-importar el módulo dinámico ni duplicar la
-      // suscripción a MQTT.
       global: true,
       imports,
       controllers: [ReadingsController],

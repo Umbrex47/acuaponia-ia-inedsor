@@ -5,7 +5,11 @@
 
 // ── ADC ──
 static const float ADC_VREF    = 3.3f;
+#if defined(ESP8266)
+static const int   ADC_MAX     = 1023;
+#else
 static const int   ADC_MAX     = 4095;
+#endif
 static const int   ADC_SAMPLES = 16;
 
 // ── Escala del dashboard (mS/cm) ──
@@ -37,9 +41,11 @@ static float voltageToEcUs(float voltage, float tempC) {
 }
 
 void ec_begin() {
+#if !defined(ESP8266)
   analogReadResolution(12);
   analogSetAttenuation(ADC_11db);
-  Serial.printf("[EC] Medidor en GPIO %d (DFRobot DFR0300)\n", PIN_EC);
+#endif
+  Serial.printf("[EC] Medidor en pin %d (DFRobot DFR0300)\n", PIN_EC);
 }
 
 Reading ec_read() {

@@ -28,6 +28,14 @@ export class SensorReading {
   @Prop({ default: 'mqtt' })
   source!: string;
 
+  /** Quién registró la lectura (operador/usuario/técnico) en caso de muestreo manual. */
+  @Prop({ index: true })
+  recordedBy?: string;
+
+  /** Notas u observaciones asociadas a la medición. */
+  @Prop()
+  notes?: string;
+
   @Prop({ index: true })
   recordedAt!: Date;
 }

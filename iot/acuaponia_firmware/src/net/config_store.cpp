@@ -1,14 +1,30 @@
 #include "config_store.h"
 #include "../../arduino_secrets.h"
 
+#if defined(ESP8266)
+#include <EEPROM.h>
+#else
 #include <Preferences.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
+#if !defined(ESP8266)
 static Preferences prefs;
+#endif
+
 static DeviceConfig g_cfg;
 static bool g_persisted = false;
+
+#if defined(ESP8266)
+static const uint32_t EEPROM_MAGIC = 0x41515541; // "AQUA"
+struct EepromData {
+  uint32_t magic;
+  DeviceConfig cfg;
+};
+#endif
 
 // Declaración anticipada: begin() puede migrar NVS llamando a save().
 bool config_save(const DeviceConfig& cfg);
@@ -81,6 +97,22 @@ void config_store_begin() {
   g_cfg = secrets;
   g_persisted = false;
 
+#if defined(ESP8266)
+  EEPROM.begin(sizeof(EepromData) + 16);
+  EepromData data;
+  EEPROM.get(0, data);
+
+  if (data.magic != EEPROM_MAGIC || data.cfg.wifiSsid[0] == '\0') {
+    Serial.println("[CFG] EEPROM vacía o inválida · usando arduino_secrets.h");
+    // Se usará defaults que ya están en g_cfg
+  } else {
+    g_cfg = data.cfg;
+    g_persisted = true;
+    Serial.printf("[CFG] Cargado desde EEPROM · WiFi=%s · MQTT=%s:%u (TLS %s)\n",
+                  g_cfg.wifiSsid, g_cfg.mqttHost, (unsigned)g_cfg.mqttPort,
+                  g_cfg.mqttTls ? "sí" : "no");
+  }
+#else
   if (!prefs.begin("aquaponic", true)) {
     Serial.println("[CFG] NVS no disponible · usando arduino_secrets.h");
     return;
@@ -115,20 +147,21 @@ void config_store_begin() {
   Serial.printf("[CFG] Cargado desde NVS · WiFi=%s · MQTT=%s:%u (TLS %s)\n",
                 g_cfg.wifiSsid, g_cfg.mqttHost, (unsigned)g_cfg.mqttPort,
                 g_cfg.mqttTls ? "sí" : "no");
+#endif
 
   // Migración automática: NVS con Mosquitto LAN viejo + secrets apuntan a EMQX.
   // Conserva el WiFi del NVS; solo corrige broker/TLS/usuario.
   if (mqtt_looks_like_stale_lan(g_cfg) && secrets_look_like_cloud(secrets)) {
     Serial.printf(
-        "[CFG] NVS tiene broker LAN antiguo (%s:%u, TLS off) · "
+        "[CFG] config tiene broker LAN antiguo (%s:%u, TLS off) · "
         "aplicando EMQX de arduino_secrets.h (%s:%u TLS)\n",
         g_cfg.mqttHost, (unsigned)g_cfg.mqttPort,
         secrets.mqttHost, (unsigned)secrets.mqttPort);
     apply_mqtt_from(secrets, g_cfg);
     if (config_save(g_cfg)) {
-      Serial.println("[CFG] Migración guardada en NVS");
+      Serial.println("[CFG] Migración guardada correctamente");
     } else {
-      Serial.println("[CFG] Migración solo en RAM (falló escritura NVS)");
+      Serial.println("[CFG] Migración solo en RAM (falló escritura)");
     }
   }
 }
@@ -138,6 +171,20 @@ const DeviceConfig& config_get() { return g_cfg; }
 bool config_was_persisted() { return g_persisted; }
 
 bool config_save(const DeviceConfig& cfg) {
+#if defined(ESP8266)
+  EepromData data;
+  data.magic = EEPROM_MAGIC;
+  data.cfg = cfg;
+  EEPROM.put(0, data);
+  if (!EEPROM.commit()) {
+    Serial.println("[CFG] Falló guardado en EEPROM");
+    return false;
+  }
+  g_cfg = cfg;
+  g_persisted = true;
+  Serial.println("[CFG] Guardado en EEPROM");
+  return true;
+#else
   if (!prefs.begin("aquaponic", false)) {
     Serial.println("[CFG] No se pudo abrir NVS para escritura");
     return false;
@@ -157,6 +204,7 @@ bool config_save(const DeviceConfig& cfg) {
   g_persisted = true;
   Serial.println("[CFG] Guardado en NVS");
   return true;
+#endif
 }
 
 bool config_restore_mqtt_defaults() {
@@ -168,6 +216,17 @@ bool config_restore_mqtt_defaults() {
 }
 
 bool config_clear_nvs() {
+#if defined(ESP8266)
+  EepromData data;
+  memset(&data, 0, sizeof(data));
+  EEPROM.put(0, data);
+  EEPROM.commit();
+  
+  config_load_defaults(g_cfg);
+  g_persisted = false;
+  Serial.println("[CFG] EEPROM borrada · defaults de arduino_secrets.h en RAM");
+  return true;
+#else
   if (!prefs.begin("aquaponic", false)) {
     Serial.println("[CFG] No se pudo abrir NVS para borrar");
     return false;
@@ -178,4 +237,5 @@ bool config_clear_nvs() {
   g_persisted = false;
   Serial.println("[CFG] NVS borrado · defaults de arduino_secrets.h en RAM");
   return true;
+#endif
 }
