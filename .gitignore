@@ -65,3 +65,6 @@ plant-detection/models/*.json
 
 *.pt
 *.onnx
+
+# Mobile prebuild
+mobile/android/

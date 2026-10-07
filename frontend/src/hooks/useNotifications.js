@@ -2,17 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAquaponic } from '../context/useAquaponic';
 
 const SEVERITY_STYLES = {
-  info: { bg: 'bg-accent-blue/10', border: 'border-accent-blue/30', text: 'text-accent-blue', emoji: 'ℹ️' },
-  warn: { bg: 'bg-accent-amber/10', border: 'border-accent-amber/30', text: 'text-accent-amber', emoji: '⚠️' },
-  critical: { bg: 'bg-accent-red/10', border: 'border-accent-red/30', text: 'text-accent-red', emoji: '🔴' },
-  success: { bg: 'bg-accent-green/10', border: 'border-accent-green/30', text: 'text-accent-green', emoji: '✅' },
+  info: { bg: 'bg-accent-blue/10', border: 'border-accent-blue/30', text: 'text-accent-blue' },
+  warn: { bg: 'bg-accent-amber/10', border: 'border-accent-amber/30', text: 'text-accent-amber' },
+  critical: { bg: 'bg-accent-red/10', border: 'border-accent-red/30', text: 'text-accent-red' },
+  success: { bg: 'bg-accent-green/10', border: 'border-accent-green/30', text: 'text-accent-green' },
 };
 
-const CATEGORY_EMOJI = {
-  'early-warning-active': '🟡',
-  'ia-decision': '⚙️',
-  'ia-recovery': '🟢',
-  'ia-report': '📑',
+const CATEGORY_ICONS = {
+  'early-warning-active': 'warn',
+  'ia-decision': 'chip',
+  'ia-recovery': 'success',
+  'ia-report': 'report',
 };
 
 const MAX_NOTIFICATIONS = 50;
@@ -72,6 +72,6 @@ export function useNotifications() {
     clear,
     dismiss,
     styles: SEVERITY_STYLES,
-    categoryEmoji: CATEGORY_EMOJI,
+    categoryIcons: CATEGORY_ICONS,
   };
 }

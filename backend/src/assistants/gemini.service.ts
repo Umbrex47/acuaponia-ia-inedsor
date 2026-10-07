@@ -116,35 +116,65 @@ export class GeminiService {
     }
 
     const req = this.toGeminiRequest(messages, tools);
+    const candidateModels = Array.from(
+      new Set([
+        this.model,
+        'gemini-2.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-flash-latest',
+        'gemini-3.5-flash-lite',
+      ]),
+    ).filter(Boolean);
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    try {
-      const url = `${this.baseUrl}/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req),
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        // Errores frecuentes: 400 API_KEY_INVALID (key con comillas en .env),
-        // 404 modelo inexistente/retirado, 429 cuota agotada.
-        this.logger.error(`Gemini ${res.status} en modelo "${this.model}": ${text}`);
-        throw new Error(`Gemini ${res.status}: ${text}`);
+    let lastError: Error | null = null;
+
+    for (const modelCandidate of candidateModels) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+      try {
+        const url = `${this.baseUrl}/v1beta/models/${modelCandidate}:generateContent?key=${this.apiKey}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          this.logger.warn(`Gemini ${res.status} en modelo "${modelCandidate}": ${text.slice(0, 150)}`);
+          lastError = new Error(`Gemini ${res.status}: ${text}`);
+
+          // Si es 503 (sobrecarga), 429 (cuota) o 404 (modelo no disponible), intentamos con el siguiente modelo
+          if (res.status === 503 || res.status === 429 || res.status === 404) {
+            continue;
+          }
+          throw lastError;
+        }
+
+        const data = (await res.json()) as GeminiChatResponse;
+        if (modelCandidate !== this.model) {
+          this.logger.log(`Respuesta obtenida con modelo de respaldo "${modelCandidate}" (el principal era "${this.model}")`);
+        }
+        return this.fromGeminiResponse(data);
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          this.logger.error(`Gemini timeout tras ${this.timeoutMs}ms en ${modelCandidate}`);
+          lastError = new Error(`Gemini no respondió en ${this.timeoutMs}ms`);
+        } else {
+          lastError = err instanceof Error ? err : new Error(String(err));
+        }
+      } finally {
+        clearTimeout(timer);
       }
-      const data = (await res.json()) as GeminiChatResponse;
-      return this.fromGeminiResponse(data);
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        this.logger.error(`Gemini timeout tras ${this.timeoutMs}ms`);
-        throw new Error(`Gemini no respondió en ${this.timeoutMs}ms`);
-      }
-      throw err;
-    } finally {
-      clearTimeout(timer);
     }
+
+    this.logger.error(`Todos los modelos de Gemini fallaron. Último error: ${lastError?.message}`);
+    // Si todos los modelos están saturados, devolvemos una respuesta de contingencia en vez de crashear el chat
+    return {
+      role: 'assistant',
+      content: '⚠️ Los servidores de Gemini están experimentando alta demanda en Google Cloud (503). El sistema acuapónico continúa operando normalmente con la telemetría en tiempo real y el motor de decisiones TypeSafe AI.',
+    };
   }
 
   // ── Conversión de mensajes OpenAI → Gemini ────────────────────────────

@@ -10,7 +10,13 @@
       "bundleIdentifier": "com.inedsor.aquaponic"
     },
     "android": {
-      "package": "com.inedsor.aquaponic"
+      "package": "com.inedsor.aquaponic",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
+      ]
     },
     "plugins": [
       [

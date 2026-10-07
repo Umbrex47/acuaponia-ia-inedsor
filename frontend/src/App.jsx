@@ -9,6 +9,7 @@ import Sensors from './pages/Sensors';
 import Plants from './pages/Plants';
 import Fish from './pages/Fish';
 import Assistant from './pages/Assistant';
+import Playground from './pages/Playground';
 
 const SCREENS = {
   dashboard: { title: 'Dashboard', component: Dashboard },
@@ -16,6 +17,7 @@ const SCREENS = {
   sensors: { title: 'Estado de sensores', component: Sensors },
   plants: { title: 'Información de plantas', component: Plants },
   fish: { title: 'Información de peces', component: Fish },
+  playground: { title: 'Playground IA', component: Playground },
   assistant: { title: 'Asistente', component: Assistant },
 };
 

@@ -250,4 +250,8 @@ export default () => ({
     chatPerMinute: parseInt(process.env.THROTTLE_CHAT ?? '60', 10),
     actuatorPerMinute: parseInt(process.env.THROTTLE_ACTUATOR ?? '30', 10),
   },
+  typesafe: {
+    apiKey: (process.env.TYPESAFE_API_KEY || '').trim().replace(/^["']|["']$/g, ''),
+    model: (process.env.TYPESAFE_MODEL || 'typesafe-system-one').trim(),
+  },
 });

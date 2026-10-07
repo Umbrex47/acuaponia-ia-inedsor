@@ -1,28 +1,44 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Inject, Optional, Post, forwardRef } from '@nestjs/common';
 import { AlertService } from './alert.service';
 import { TelegramService } from './telegram.service';
+import { AquaponicGateway } from '../aquaponic/aquaponic.gateway';
 
 @Controller('alerts')
 export class AlertsController {
   constructor(
     private readonly alerts: AlertService,
     private readonly telegram: TelegramService,
+    @Optional()
+    @Inject(forwardRef(() => AquaponicGateway))
+    private readonly gateway?: AquaponicGateway,
   ) {}
 
   /**
    * Evalúa los parámetros enviados desde el formulario del dashboard y dispara
-   * correos para cualquier valor fuera de rango.
-   * Acepta el mismo formato que el resto del sistema: { sensors: {...} } o los
-   * sensores en la raíz.
+   * alertas a Telegram, Correo y WebSocket para cualquier valor fuera de rango.
+   * Además retransmite las lecturas vía WebSocket a todas las pantallas abiertas.
    * Ej: POST /alerts/manual  { "sensors": { "temperatura": { "value": 34 } } }
    */
   @Post('manual')
   evaluateManual(@Body() body: unknown) {
     const result = this.alerts.notifyManual(body);
+
+    // Retransmitir al dashboard WebSocket en tiempo real
+    if (this.gateway && body) {
+      try {
+        this.gateway.broadcast(
+          typeof body === 'string' ? body : JSON.stringify(body),
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+
     return {
       ok: true,
       evaluated: result.evaluated,
       outOfRange: result.outOfRange,
+      humanActions: result.humanActions,
     };
   }
 

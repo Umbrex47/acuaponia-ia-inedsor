@@ -25,6 +25,16 @@ export class AquaponicGateway
         message: 'Aquaponic OS backend — listo para telemetría',
       }),
     );
+
+    client.on('message', (raw) => {
+      try {
+        const text = raw.toString();
+        // Re-transmitir a todos los clientes conectados
+        this.broadcast(text);
+      } catch (err) {
+        this.logger.warn(`Error al retransmitir mensaje WS: ${err}`);
+      }
+    });
   }
 
   handleDisconnect(): void {

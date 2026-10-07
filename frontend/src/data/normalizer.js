@@ -7,6 +7,10 @@ const SENSOR_ALIASES = {
   oxigeno: ['oxigeno', 'oxygen', 'do', 'oxigenoDisuelto'],
   nivelAgua: ['nivelAgua', 'nivel', 'waterLevel', 'nivel_agua'],
   nitratos: ['nitratos', 'nitrates', 'no3'],
+  nitritos: ['nitritos', 'nitrites', 'no2'],
+  amonio: ['amonio', 'ammonium', 'nh4', 'amoniaco', 'nh3'],
+  fosfatos: ['fosfatos', 'phosphates', 'po4'],
+  alcalinidad: ['alcalinidad', 'alkalinity', 'kh'],
   co2: ['co2', 'CO2'],
   electroconductividad: [
     'electroconductividad',
@@ -33,7 +37,7 @@ function clampPercent(value) {
 }
 
 function pick(obj, keys) {
-  if (!obj || typeof obj !== 'object') return undefined;
+  if (!obj || typeof obj !== 'object' || !Array.isArray(keys)) return undefined;
   for (const key of keys) {
     if (obj[key] != null && obj[key] !== '') return obj[key];
   }
@@ -52,7 +56,8 @@ function pick(obj, keys) {
  * Devuelve `undefined` si el sensor no viene en el payload.
  */
 function buildSensor(source, key) {
-  const raw = pick(source, SENSOR_ALIASES[key]);
+  const aliases = SENSOR_ALIASES[key] ?? [key];
+  const raw = pick(source, aliases);
   if (raw == null) return undefined;
 
   const meta = SENSOR_META[key] ?? {};
@@ -76,7 +81,8 @@ function buildSensor(source, key) {
   const value = toNumber(raw);
   if (!Number.isFinite(value)) return undefined;
 
-  const percent = pick(source, [`${SENSOR_ALIASES[key][0]}Percent`, 'percent']);
+  const primaryAlias = aliases[0] ?? key;
+  const percent = pick(source, [`${primaryAlias}Percent`, 'percent']);
   return {
     value,
     percent: clampPercent(percent),

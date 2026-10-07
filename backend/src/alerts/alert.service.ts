@@ -12,6 +12,7 @@ import {
   RiskLevel,
   SENSOR_THRESHOLDS,
 } from './thresholds';
+import { getHumanActions, HumanActionProtocol } from './human-actions';
 
 interface SensorState {
   level: RiskLevel;
@@ -74,18 +75,23 @@ export class AlertService implements OnModuleInit {
    * en ese estado (respetando el cooldown anti-spam).
    * Devuelve cuántos sensores se evaluaron y cuántos salieron de rango.
    */
-  notifyManual(data: unknown): { evaluated: number; outOfRange: number } {
+  notifyManual(data: unknown): { evaluated: number; outOfRange: number; humanActions: HumanActionProtocol[] } {
     const readings = extractReadings(data);
     let outOfRange = 0;
+    const humanActions: HumanActionProtocol[] = [];
 
     for (const { key, value } of readings) {
       const level = evaluateRisk(key, value);
       if (!level) continue;
-      if (level !== 'stable') outOfRange += 1;
+      if (level !== 'stable') {
+        outOfRange += 1;
+        const protocol = getHumanActions(key, level);
+        if (protocol) humanActions.push(protocol);
+      }
       this.handleReading(key, value, level, { force: true, source: 'manual' });
     }
 
-    return { evaluated: readings.length, outOfRange };
+    return { evaluated: readings.length, outOfRange, humanActions };
   }
 
   private handleReading(
@@ -111,7 +117,8 @@ export class AlertService implements OnModuleInit {
     if (crossedThreshold) {
       const cooldownMs = this.config.get<number>('alerts.cooldownMs', 300000);
       const now = Date.now();
-      if (now - lastAlertAt >= cooldownMs) {
+      const shouldSend = force || source === 'manual' || (now - lastAlertAt >= cooldownMs);
+      if (shouldSend) {
         lastAlertAt = now;
         void this.sendAlert(key, value, level, source);
       } else {
@@ -153,9 +160,11 @@ export class AlertService implements OnModuleInit {
     const origin =
       source === 'manual' ? 'Ingreso manual de parámetros' : 'Telemetría automática';
 
+    const protocol = getHumanActions(key, level);
+
     const subject = `[Aquaponía] ${riskLabel}: ${meta.label} fuera de rango`;
 
-    const text = [
+    const textLines = [
       `Alerta del sistema acuapónico`,
       ``,
       `Parámetro: ${meta.label}`,
@@ -164,11 +173,21 @@ export class AlertService implements OnModuleInit {
       `Rango óptimo: ${meta.optimal.min} – ${meta.optimal.max}${unit}`,
       `Origen: ${origin}`,
       `Fecha: ${timestamp}`,
-    ].join('\n');
+    ];
+
+    if (protocol && protocol.actions.length > 0) {
+      textLines.push(``);
+      textLines.push(`Acciones que debe realizar un humano:`);
+      protocol.actions.forEach((act, idx) => {
+        textLines.push(`${idx + 1}. ${act}`);
+      });
+    }
+
+    const text = textLines.join('\n');
 
     const accent = level === 'high' ? '#DC2626' : '#2563EB';
     const html = `
-      <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden">
+      <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden">
         <div style="background:${accent};color:#fff;padding:18px 24px">
           <h1 style="margin:0;font-size:18px">Alerta del sistema acuapónico</h1>
         </div>
@@ -188,12 +207,22 @@ export class AlertService implements OnModuleInit {
             <tr><td style="padding:6px 0;color:#666">Fecha</td>
                 <td style="padding:6px 0;text-align:right">${timestamp}</td></tr>
           </table>
+
+          ${protocol && protocol.actions.length > 0 ? `
+            <div style="margin-top:20px;padding:16px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px">
+              <h3 style="margin:0 0 8px;color:#92400E;font-size:14px">Acciones que debe realizar un humano:</h3>
+              <p style="margin:0 0 8px;color:#B45309;font-size:12px"><strong>Riesgo:</strong> ${protocol.risk}</p>
+              <ol style="margin:0;padding-left:20px;color:#78350F;font-size:13px;line-height:1.6">
+                ${protocol.actions.map((act) => `<li>${act}</li>`).join('')}
+              </ol>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
 
     const emoji = level === 'high' ? '🔴' : '🔵';
-    const telegramText = [
+    const telegramLines = [
       `${emoji} <b>Alerta acuapónica</b>`,
       ``,
       `<b>Parámetro:</b> ${meta.label}`,
@@ -202,7 +231,17 @@ export class AlertService implements OnModuleInit {
       `<b>Rango óptimo:</b> ${meta.optimal.min} – ${meta.optimal.max}${unit}`,
       `<b>Origen:</b> ${origin}`,
       `<b>Fecha:</b> ${timestamp}`,
-    ].join('\n');
+    ];
+
+    if (protocol && protocol.actions.length > 0) {
+      telegramLines.push(``);
+      telegramLines.push(`<b>Acciones que debe realizar un humano:</b>`);
+      protocol.actions.forEach((act, idx) => {
+        telegramLines.push(`${idx + 1}. ${act}`);
+      });
+    }
+
+    const telegramText = telegramLines.join('\n');
 
     await Promise.all([
       this.mail.send({ subject, text, html }),
@@ -225,6 +264,7 @@ export class AlertService implements OnModuleInit {
         unit: meta.unit ?? null,
         level,
         optimal: meta.optimal,
+        protocol: protocol || null,
       },
     });
   }

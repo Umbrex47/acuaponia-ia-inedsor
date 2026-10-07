@@ -15,6 +15,7 @@ import { FishAssessmentService } from './fish-assessment.service';
 import { PlantAssessmentService } from './plant-assessment.service';
 import { PumpDecisionService } from './pump-decision.service';
 import { ReportService } from './report.service';
+import { TypeSafeDecisionService } from './typesafe-decision.service';
 import {
   IaActionLog,
   IaActionLogSchema,
@@ -59,7 +60,9 @@ import {
     FishAssessmentService,
     PlantAssessmentService,
     DecisionFlowService,
+    TypeSafeDecisionService,
   ],
+  exports: [TypeSafeDecisionService],
 })
 export class DecisionModule {
   constructor() {

@@ -1,4 +1,5 @@
 import { useProposals } from '../hooks/useProposals';
+import { Icon } from './Icon';
 
 const ACTUATOR_LABELS = {
   bomba_agua: 'Bomba de agua',
@@ -22,8 +23,9 @@ export default function ProposalPanel({ collapsed, onToggle }) {
         onClick={onToggle}
         className="flex items-center justify-between px-4 py-3 border-b border-black/5 bg-paper text-left"
       >
-        <span className="font-display font-semibold text-sm">
-          {collapsed ? '📋' : `Propuestas IA (${pending.length})`}
+        <span className="font-display font-semibold text-sm flex items-center gap-1.5">
+          <Icon.FileText className="w-4 h-4 text-ink shrink-0" />
+          {!collapsed && <span>Propuestas IA ({pending.length})</span>}
         </span>
         {!collapsed && <span className="text-xs text-ink/50">{collapsed ? '▶' : '◀'}</span>}
       </button>

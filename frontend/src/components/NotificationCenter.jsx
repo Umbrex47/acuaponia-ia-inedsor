@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
+import { Icon } from './Icon';
 
 function timeAgo(iso) {
   const diff = Math.max(0, Date.now() - new Date(iso).getTime());
@@ -13,8 +14,27 @@ function timeAgo(iso) {
   return `hace ${d} d`;
 }
 
+function renderNotificationIcon(severity, category) {
+  if (category === 'ia-decision') {
+    return <Icon.Chip className="w-4 h-4 text-ink shrink-0 mt-0.5" />;
+  }
+  if (category === 'ia-report') {
+    return <Icon.FileText className="w-4 h-4 text-ink shrink-0 mt-0.5" />;
+  }
+  if (severity === 'critical') {
+    return <Icon.AlertOctagon className="w-4 h-4 text-accent-red shrink-0 mt-0.5" />;
+  }
+  if (severity === 'warn') {
+    return <Icon.AlertTriangle className="w-4 h-4 text-accent-amber shrink-0 mt-0.5" />;
+  }
+  if (severity === 'success') {
+    return <Icon.CheckCircle className="w-4 h-4 text-accent-green shrink-0 mt-0.5" />;
+  }
+  return <Icon.Activity className="w-4 h-4 text-accent-blue shrink-0 mt-0.5" />;
+}
+
 export default function NotificationCenter() {
-  const { notifications, unread, markAllRead, clear, dismiss, styles, categoryEmoji } = useNotifications();
+  const { notifications, unread, markAllRead, clear, dismiss, styles } = useNotifications();
   const [open, setOpen] = useState(false);
 
   const toggle = () => {
@@ -82,16 +102,13 @@ export default function NotificationCenter() {
               <ul className="divide-y divide-black/5">
                 {notifications.map((n) => {
                   const s = styles[n.severity] ?? styles.info;
-                  const catEmoji = categoryEmoji?.[n.category];
                   return (
                     <li
                       key={n.id}
                       className={`px-4 py-3 ${s.bg} border-l-4 ${s.border.replace('border-', 'border-l-')}`}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="text-base leading-none mt-0.5">
-                          {catEmoji ?? s.emoji}
-                        </span>
+                        {renderNotificationIcon(n.severity, n.category)}
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-medium ${s.text} truncate`}>{n.title}</p>
                           <p className="text-xs text-ink/70 mt-0.5 break-words">{n.message}</p>

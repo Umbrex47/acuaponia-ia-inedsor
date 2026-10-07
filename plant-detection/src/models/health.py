@@ -5,9 +5,17 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import torch
-import torch.nn as nn
-from torchvision import models, transforms
+try:
+    import torch
+    import torch.nn as nn
+    from torchvision import models, transforms
+    TORCH_AVAILABLE = True
+except ImportError:
+    torch = None
+    nn = None
+    models = None
+    transforms = None
+    TORCH_AVAILABLE = False
 
 # Mapeo PlantVillage → categorías generales de salud (multi-cultivo)
 HEALTH_CATEGORIES = ("healthy", "stressed", "diseased", "nutrient_deficient")
@@ -70,21 +78,28 @@ class HealthClassifier:
     ):
         self.input_size = input_size
         self.fallback_heuristics = fallback_heuristics
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.model: nn.Module | None = None
+        self.model: nn.Module | None = None if TORCH_AVAILABLE else None
         self.class_to_health: dict[int, str] = {}
 
-        self.transform = transforms.Compose(
-            [
-                transforms.ToPILImage(),
-                transforms.Resize((input_size, input_size)),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        )
-
-        if model_path and model_path.exists():
-            self._load(model_path)
+        if TORCH_AVAILABLE:
+            self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+            self.transform = transforms.Compose(
+                [
+                    transforms.ToPILImage(),
+                    transforms.Resize((input_size, input_size)),
+                    transforms.ToTensor(),
+                    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                ]
+            )
+            if model_path and model_path.exists():
+                try:
+                    self._load(model_path)
+                except Exception:
+                    self.model = None
+        else:
+            self.device = "cpu"
+            self.transform = None
+            self.model = None
 
     def _load(self, path: Path) -> None:
         checkpoint = torch.load(path, map_location=self.device, weights_only=False)

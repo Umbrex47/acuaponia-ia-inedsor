@@ -7,6 +7,6 @@ import { AquaponicService } from './aquaponic.service';
   imports: [MqttModule],
   controllers: [],
   providers: [AquaponicGateway, AquaponicService],
-  exports: [],
+  exports: [AquaponicGateway],
 })
 export class AquaponicModule {}
